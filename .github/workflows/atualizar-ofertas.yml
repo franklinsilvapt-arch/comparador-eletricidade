@@ -1,0 +1,26 @@
+name: Atualizar ofertas (ERSE)
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 comparador-eletricidade/scripts/atualizar_ofertas.py
+      - run: |
+          git config user.name "lf-bot"
+          git config user.email "bot@literaciafinanceira.pt"
+          git add comparador-eletricidade/data/ofertas.json
+          git commit -m "Ofertas da ERSE atualizadas" || echo "sem alterações"
+          git pull --rebase
+          git push
