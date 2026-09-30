@@ -19,7 +19,10 @@
 #lf-dp .el-logo{background:#fff;border:1px solid var(--border-secondary)}
 #lf-dp .el-logo img{inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);border-radius:0}
 #lf-dp .el-logo img.is-on{background:#fff;box-shadow:0 0 0 4px #fff}
-#lf-dp .el-logo-w{width:72px}
+#lf-dp .el-lg-coop img,#lf-dp .el-lg-ibd img,#lf-dp .el-lg-end img{object-fit:cover}
+#lf-dp .el-lg-coop img{object-position:0 50%}
+#lf-dp .el-lg-ibd img{object-position:25% 50%}
+#lf-dp .el-lg-end img{object-position:0 50%;inset:6px auto 6px 9px;width:26px;height:32px}
 #lf-dp .dp-mk{margin:4px 0 12px}
 #lf-dp .el-ctl{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
 #lf-dp .el-ctl-r{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
