@@ -3,6 +3,10 @@ name: Atualizar ofertas (ERSE)
 on:
   schedule:
     - cron: "17 6 * * *"
+  push:
+    paths:
+      - "comparador-eletricidade/scripts/atualizar_ofertas.py"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
