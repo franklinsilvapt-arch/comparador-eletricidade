@@ -1,0 +1,46 @@
+/* Comparador de eletricidade: suplemento ao CSS do comparador de depositos (#lf-dp .dp-*). */
+#lf-dp .el-toggle4{grid-template-columns:repeat(4,1fr)}
+#lf-dp .el-form2{margin-top:20px}
+#lf-dp .el-input-unit{padding-right:52px}
+#lf-dp .el-input-unit2{padding-right:68px}
+#lf-dp .el-perfis{display:flex;flex-wrap:wrap;gap:8px}
+#lf-dp .el-perfis .dp-irs-b{padding:11px 14px;font-size:14px;line-height:20px;border-radius:var(--radius-xl)}
+#lf-dp .el-off{opacity:.5}
+#lf-dp .el-duo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#lf-dp .el-caso{margin-top:20px;text-align:left}
+#lf-dp .el-caso-c{display:flex;flex-wrap:wrap;gap:8px}
+#lf-dp .el-caso-c .dp-chip{flex:0 0 auto}
+#lf-dp .dp-kpi-v.el-pos{color:var(--color-success-700)}
+#lf-dp .dp-kpi-v.el-neg{color:#697386}
+#lf-dp .dp-c-main{grid-template-columns:28px 236px 1fr 184px}
+#lf-dp .dp-prod{max-width:180px}
+#lf-dp .dp-kpi-s{white-space:normal}
+#lf-dp .dp-sub td{font-size:13px;line-height:18px}
+#lf-dp .el-logo{background:#fff;border:1px solid var(--border-secondary)}
+#lf-dp .el-logo img{inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);border-radius:0}
+#lf-dp .el-logo img.is-on{background:#fff;box-shadow:0 0 0 4px #fff}
+#lf-dp .el-logo-w{width:72px}
+#lf-dp .dp-mk{margin:4px 0 12px}
+#lf-dp .el-ctl{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
+#lf-dp .el-ctl-r{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+#lf-dp .el-ctl .dp-select{max-width:100%}
+#lf-dp .el-ops{margin-top:0}
+#lf-dp .el-mini{font-size:12px;line-height:18px;color:var(--text-quaternary);margin:6px 0 0;text-align:left}
+#lf-dp .el-h-notas{margin-top:20px}
+#lf-dp .el-notas{columns:2;column-gap:32px}
+#lf-dp .el-notas li{break-inside:avoid;overflow-wrap:anywhere}
+#lf-dp .el-notas b{font-weight:600;color:var(--text-primary)}
+#lf-dp .dp-kv span:last-child{overflow-wrap:anywhere}
+#lf-dp .dp-foot a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+@media (max-width:1000px){
+  #lf-dp .dp-c-main{grid-template-columns:1fr}
+  #lf-dp .dp-prod{max-width:none}
+  #lf-dp .el-form2,#lf-dp .el-caso{margin-top:16px}
+  #lf-dp .el-perfis .dp-irs-b{flex:1 1 auto;text-align:center}
+  #lf-dp .el-toggle4{grid-template-columns:repeat(2,1fr)}
+  #lf-dp .el-ctl{flex-direction:column;align-items:stretch}
+  #lf-dp .el-ctl-r{justify-content:flex-start}
+  #lf-dp .el-ctl-r .dp-select{flex:1 1 100%}
+  #lf-dp .el-notas{columns:1}
+  #lf-dp .dp-mk{text-align:left}
+}
