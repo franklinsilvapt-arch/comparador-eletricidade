@@ -1,8 +1,18 @@
 /* Comparador de eletricidade: suplemento ao CSS do comparador de depositos (#lf-dp .dp-*). */
 #lf-dp .el-toggle4{grid-template-columns:repeat(4,1fr)}
-#lf-dp .el-form2{margin-top:20px}
-#lf-dp .el-input-unit{padding-right:52px}
-#lf-dp .el-input-unit2{padding-right:68px}
+#lf-dp .el-simples{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;text-align:left}
+#lf-dp .el-val .dp-input{padding-right:116px}
+#lf-dp .el-unid{position:absolute;top:4px;right:4px;bottom:4px;display:flex;gap:2px;padding:2px;border-radius:var(--radius-lg);background:var(--bg-tertiary)}
+#lf-dp .el-unid-b{border:0;background:transparent;border-radius:var(--radius-md);padding:0 12px;font:inherit;font-size:14px;font-weight:500;color:#4F5969;cursor:pointer}
+#lf-dp .el-unid-b.is-on{background:#3A4454;color:#fff}
+#lf-dp .el-ajuda{font-size:12px;line-height:18px;color:var(--text-quaternary);margin:6px 0 0;text-align:left}
+#lf-dp .el-ajuda b{font-weight:600;color:var(--text-primary)}
+#lf-dp .el-rapido{margin-top:20px;text-align:left}
+#lf-dp .el-mais{display:inline-flex;align-items:center;gap:6px;margin-top:20px;padding:0;border:0;background:transparent;font:inherit;font-size:14px;font-weight:500;color:#3A4454;cursor:pointer}
+#lf-dp .el-mais .dp-caret{width:16px;height:16px;transition:transform .15s}
+#lf-dp .el-mais.is-open .dp-caret{transform:rotate(180deg)}
+#lf-dp .el-avancado{margin-top:16px;padding-top:20px;border-top:1px solid var(--border-secondary)}
+#lf-dp .el-av-g{display:grid;grid-template-columns:1fr 260px;gap:24px;align-items:start;text-align:left}
 #lf-dp .el-perfis{display:flex;flex-wrap:wrap;gap:8px}
 #lf-dp .el-perfis .dp-irs-b{padding:11px 14px;font-size:14px;line-height:20px;border-radius:var(--radius-xl)}
 #lf-dp .el-off{opacity:.5}
@@ -38,7 +48,9 @@
 @media (max-width:1000px){
   #lf-dp .dp-c-main{grid-template-columns:1fr}
   #lf-dp .dp-prod{max-width:none}
-  #lf-dp .el-form2,#lf-dp .el-caso{margin-top:16px}
+  #lf-dp .el-caso,#lf-dp .el-rapido,#lf-dp .el-mais{margin-top:16px}
+  #lf-dp .el-simples,#lf-dp .el-av-g{grid-template-columns:1fr;gap:16px}
+  #lf-dp .el-mais{text-align:left}
   #lf-dp .el-perfis .dp-irs-b{flex:1 1 auto;text-align:center}
   #lf-dp .el-toggle4{grid-template-columns:repeat(2,1fr)}
   #lf-dp .el-ctl{flex-direction:column;align-items:stretch}
