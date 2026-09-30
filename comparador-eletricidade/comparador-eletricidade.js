@@ -18,6 +18,11 @@
   var IEC = 0.001;            /* imposto especial de consumo, EUR/kWh */
   var CAV = 2.85;             /* contribuicao audiovisual, EUR/mes */
   var KWH_IVA6 = 200, KWH_IVA6_FAM = 300; /* kWh por 30 dias com IVA a 6%, potencias ate 6,9 kVA */
+  /* Tarifa social 2026 (ERSE): desconto no termo fixo em EUR/dia por potencia (1,15 a 6,9 kVA) e na energia em EUR/kWh
+     (igual em todos os periodos horarios), isencao do IEC e contribuicao audiovisual reduzida para 1 EUR/mes.
+     Valores iguais aos que o simulador da ERSE aplica a todas as ofertas. */
+  var TS_POT = [0.0361, 0.0722, 0.1083, 0.1444, 0.1806, 0.2166];
+  var TS_KWH = 0.0468, CAV_TS = 1;
 
   var NOMES = {
     TUR: 'Mercado regulado', ALFAENERGIA: 'Alfa Energia', AUDAX: 'Audax', COOP: 'Coopérnico', EDPC: 'EDP',
@@ -27,7 +32,7 @@
     PORTULOGOS: 'Portulogos', REPSOL: 'Repsol', YESENERGY: 'Yes Energy', ACCIONA: 'Acciona', ELERGONE: 'Elergone',
     LOGICA: 'Logica Energy', 'ZUG POWER': 'Zug Power', G9: 'G9', ROCKWATT: 'Rockwatt'
   };
-  /* Logotipos em logos/<codigo em minusculas>.png. LARGOS: logotipos em formato horizontal. */
+  /* Logotipos em logos/<codigo em minusculas>.png. LARGOS: logotipos horizontais, recortados por CSS para mostrar so o simbolo no quadrado. */
   var LOGOS = { TUR: 1, ALFAENERGIA: 1, AUDAX: 1, COOP: 1, EDPC: 1, END: 1, ENIPLENITUDE: 1, EZUENERGIA: 1, GALP: 1, GOLD: 1, IBD: 1,
     IBELECTRA: 1, JAFPLUS: 1, LUZBOA: 1, LUZIGAS: 1, MEOENERGIA: 1, NABALIAENERGIA: 1, NOSSAENERGIA: 1, OENEO: 1, PORTULOGOS: 1, REPSOL: 1, YESENERGY: 1 };
   var LARGOS = { COOP: 1, END: 1, IBD: 1 };
@@ -51,7 +56,7 @@
 
   var S = {
     data: null, erro: false,
-    kwhMes: 1900 / 12, pot: 2, tarifa: 'auto', vazio: 40, ponta: 20, atual: 0, fam: false,
+    kwhMes: 1900 / 12, pot: 2, tarifa: 'auto', vazio: 40, ponta: 20, atual: 0, fam: false, social: false,
     on: {}, novo: true, open: null, visible: 10, formOpen: false, perfil: 'p1',
     ver: 'melhor', com: '', sort: 'total'
   };
@@ -82,6 +87,7 @@
     card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
     doc: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/>',
     fam: '<circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2M15 14h3a3 3 0 0 1 3 3v4"/>',
+    heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/>',
     out: '<path d="M7 17 17 7M7 7h10v10"/>'
   };
   var CARET = '<svg class="dp-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
@@ -91,7 +97,12 @@
   function calcOpcao(o, i, c, k) {
     var p = o[k] && o[k][i];
     if (!p) return null;
-    var pot = POTS[i], kwh = c.kwh;
+    var pot = POTS[i], kwh = c.kwh, tarDia = TAR_POT[i] || 0, iecKwh = IEC, cavMes = CAV;
+    if (c.social) {
+      if (i >= TS_POT.length) return null; /* so ate 6,9 kVA */
+      p = p.map(function (v, j) { return Math.round((v - (j === 0 ? TS_POT[i] : TS_KWH)) * 1e5) / 1e5; });
+      tarDia -= TS_POT[i]; iecKwh = 0; cavMes = CAV_TS;
+    }
     var lim = (c.fam ? KWH_IVA6_FAM : KWH_IVA6) * 365 / 30;
     var sh6 = pot <= 6.9 && kwh > 0 ? Math.min(1, lim / kwh) : 0;
     var ivaE = sh6 * 1.06 + (1 - sh6) * 1.23;
@@ -99,16 +110,16 @@
     if (k === 's') en = p[1] * kwh;
     else if (k === 'b') en = p[1] * kwh * (1 - c.vz) + p[2] * kwh * c.vz;
     else { var pt = Math.min(c.pt, 1 - c.vz); en = p[1] * kwh * pt + p[2] * kwh * (1 - c.vz - pt) + p[3] * kwh * c.vz; }
-    var tf = p[0] * 365, tar = (TAR_POT[i] || 0) * 365;
+    var tf = p[0] * 365, tar = tarDia * 365;
     var tfIva = pot <= 3.45 ? tar * 1.06 + (tf - tar) * 1.23 : tf * 1.23;
-    var enIva = en * ivaE, iec = kwh * IEC * 1.23, cav = CAV * 12 * 1.06;
+    var enIva = en * ivaE, iec = kwh * iecKwh * 1.23, cav = cavMes * 12 * 1.06;
     function desc(a) { return a ? a[0] + a[1] * tf * 1.23 + (a[2] * en + a[3] * kwh) * ivaE : 0; }
     var reemb = desc(o.r), dNovo = c.novo ? desc(o.d) : 0, serv = o.cs || 0;
     var total = enIva + tfIva + iec + cav + serv - reemb - dNovo;
     return {
       k: k, total: total, mes: total / 12, p: p,
-      energia: en, potencia: tf, iva: (enIva - en) + (tfIva - tf) + kwh * IEC * 0.23 + CAV * 12 * 0.06,
-      iec: kwh * IEC, cav: CAV * 12, serv: serv, reemb: reemb, dNovo: dNovo,
+      energia: en, potencia: tf, iva: (enIva - en) + (tfIva - tf) + kwh * iecKwh * 0.23 + cavMes * 12 * 0.06,
+      iec: kwh * iecKwh, cav: cavMes * 12, serv: serv, reemb: reemb, dNovo: dNovo,
       precoMedio: kwh > 0 ? en / kwh : 0
     };
   }
@@ -119,7 +130,7 @@
     if (a && b) return a.total <= b.total ? a : b;
     return a || b || calcOpcao(o, i, c, 't');
   }
-  function ctx() { return { kwh: S.kwhMes * 12, vz: S.vazio / 100, pt: S.ponta / 100, novo: S.novo, fam: S.fam }; }
+  function ctx() { return { kwh: S.kwhMes * 12, vz: S.vazio / 100, pt: S.ponta / 100, novo: S.novo, fam: S.fam, social: S.social }; }
 
   function resultados() {
     var c = ctx(), todos = [], reg = null, coms = {};
@@ -167,7 +178,7 @@
     return (w.length > 1 ? w[0].charAt(0) + w[1].charAt(0) : nome.slice(0, 2)).toUpperCase();
   }
   function logo(c, nome) {
-    return '<span class="dp-logo el-logo' + (LARGOS[c] ? ' el-logo-w' : '') + '"><span class="dp-logo-ini">' + esc(iniciais(nome)) + '</span>' +
+    return '<span class="dp-logo el-logo' + (LARGOS[c] ? ' el-lg-' + c.toLowerCase() : '') + '"><span class="dp-logo-ini">' + esc(iniciais(nome)) + '</span>' +
       (LOGOS[c] ? '<img src="' + BASE + 'logos/' + c.toLowerCase() + '.png" alt="Logótipo ' + esc(c === 'TUR' ? 'SU Eletricidade' : nome) + '" loading="lazy" onload="this.classList.add(\'is-on\')">' : '') + '</span>';
   }
   function lista(bits, nomes, sep) {
@@ -218,8 +229,8 @@
     var linhas = '<table class="dp-sub"><thead><tr><th>Parcela</th><th class="num">Por ano</th></tr></thead><tbody>' +
       '<tr><td>Energia (' + milhar(String(kwhAno)) + ' kWh)</td><td class="num">' + eur(r.energia) + '</td></tr>' +
       '<tr><td>Potência contratada (' + potTxt(POTS[S.pot]) + ')</td><td class="num">' + eur(r.potencia) + '</td></tr>' +
-      '<tr><td>Imposto especial de consumo</td><td class="num">' + eur(r.iec) + '</td></tr>' +
-      '<tr><td>Contribuição audiovisual</td><td class="num">' + eur(r.cav) + '</td></tr>' +
+      '<tr><td>Imposto especial de consumo' + (S.social ? ' (isento)' : '') + '</td><td class="num">' + eur(r.iec) + '</td></tr>' +
+      '<tr><td>Contribuição audiovisual' + (S.social ? ' (reduzida)' : '') + '</td><td class="num">' + eur(r.cav) + '</td></tr>' +
       '<tr><td>IVA</td><td class="num">' + eur(r.iva) + '</td></tr>' +
       (r.serv ? '<tr><td>Serviços adicionais obrigatórios</td><td class="num">' + eur(r.serv) + '</td></tr>' : '') +
       (r.reemb ? '<tr><td>Descontos e reembolsos</td><td class="num">-' + eur(r.reemb) + '</td></tr>' : '') +
@@ -314,7 +325,8 @@
       return '<button type="button" class="dp-chip' + (S.on[f.k] ? ' is-on' : '') + '" data-f="' + f.k + '">' + ico(IC[f.i]) + esc(f.l) + '</button>';
     }).join('');
     var caso = '<button type="button" class="dp-chip' + (S.novo ? ' is-on' : '') + '" data-novo>' + ico(IC.gift) + 'Contar descontos de novo cliente</button>' +
-      '<button type="button" class="dp-chip' + (S.fam ? ' is-on' : '') + '" data-fam>' + ico(IC.fam) + 'Família numerosa</button>';
+      '<button type="button" class="dp-chip' + (S.fam ? ' is-on' : '') + '" data-fam>' + ico(IC.fam) + 'Família numerosa</button>' +
+      '<button type="button" class="dp-chip' + (S.social ? ' is-on' : '') + '" data-social>' + ico(IC.heart) + 'Tenho tarifa social</button>';
 
     var AD = '<div class="table-results_wrapper is-pub dp-ad-card"><a class="button-arrow is-trigger w-inline-block" href="https://www.literaciafinanceira.pt/visita/trade-republic" target="_blank" rel="nofollow sponsored" data-stop><div class="calc-banner_wrapper"><div class="pub_wrapper"><div class="pub-left_wrapper"><div class="pub-logo-text_wrapper"><div class="pub-logo_wrapper is-big"><div class="pub-text-logo_wrapper"><div class="text-size-caps"><div class="text-color-quarterary"><div class="text-weight-medium">Anúncio</div></div></div><img class="image-102" src="https://cdn.prod.website-files.com/67922c46c9da6bf5d9bfdf09/681e26cb7eaca82c7095d5c7_Trade_Republic_logo_2021.svg.avif" alt="logo Trade Republic" loading="lazy"></div><div class="pub-line-divider is-full-height"></div><div class="pub-title_wrapper"><div class="text-color-primary"><div class="text-size-large"><div class="text-weight-semibold">Ganha 3,00% em juros, até 50.000€ (novos clientes)</div></div></div><div class="max-width-31"><div class="text-color-tertiary"><div class="text-size-extra-extra-small is-0-75-mobile">Pagamentos mensais na tua conta. Flexibilidade total. Investir envolve risco. Este conteúdo é uma comunicação comercial da Trade Republic Bank GmbH.</div></div></div></div></div></div></div><div class="pub-right_wrapper"><div class="hide-mobile-landscape"><div class="button-arrow"><div class="text-weight-medium"><div class="text-size-small"><div class="text-weight-medium"><div>Sabe mais</div></div></div></div><div class="button-arrow_wrapper"><div class="button-arrow-icon w-embed">' + AR + '</div></div></div></div><div class="visible-mobile-landscape"><div class="banner-button-position"><div class="rotate-45"><div class="button-arrow_wrapper"><div class="button-arrow-icon w-embed">' + AR + '</div></div></div></div></div></div></div></div></a></div>';
 
@@ -330,7 +342,7 @@
     if (res.melhor) {
       var m = res.melhor, dm = base != null ? base - m.r.total : 0;
       mk = '<div class="dp-mk"><b>' + res.nOfertas + '</b> ofertas de <b>' + res.coms.length + '</b> comercializadores para o teu caso<span class="dp-mk-sep">·</span>A mais barata: <b>' + esc(NOMES[m.o.c] || m.o.c) + '</b>, ' + eur(m.r.mes) + ' por mês' +
-        (dm >= 0.5 ? '<span class="dp-mk-sep">·</span><b>' + eurInt(dm) + '</b> a menos por ano do que ' + (S.atual > 0 ? 'a tua fatura' : 'o mercado regulado') : '') + '</div>';
+        (dm >= 0.5 ? '<span class="dp-mk-sep">·</span><b>' + eurInt(dm) + '</b> a menos por ano do que ' + (S.atual > 0 ? 'a tua fatura' : 'o mercado regulado') : '') + (S.social ? '<span class="dp-mk-sep">·</span>Com tarifa social' : '') + '</div>';
     }
 
     var comOpts = op('', S.com, 'Todos os comercializadores') + res.coms.slice().sort(function (a, b) { return (NOMES[a] || a).localeCompare(NOMES[b] || b, 'pt'); })
@@ -359,14 +371,14 @@
       '</div><div class="el-caso"><span class="dp-label">O teu caso</span><div class="el-caso-c">' + caso + '</div></div>' +
       '<p class="dp-form-note">O consumo em kWh e a potência contratada estão na tua fatura. O vazio é o consumo à noite e, no ciclo semanal, ao fim de semana. ' +
       (S.tarifa === 'auto' ? 'Em "Mais barata" comparamos a tarifa simples com a bi-horária. ' : '') +
-      'As famílias numerosas (cinco ou mais pessoas) têm IVA a 6% nos primeiros 300 kWh por mês, em vez de 200 kWh.</p></div></div>' +
+      'As famílias numerosas (cinco ou mais pessoas) têm IVA a 6% nos primeiros 300 kWh por mês, em vez de 200 kWh. A tarifa social é um desconto para famílias com rendimentos baixos, atribuído de forma automática, e aplica-se em qualquer comercializador.</p></div></div>' +
       '<div class="dp-bar"><div class="dp-chips">' + chips + '</div></div>' +
       mk + ctl +
-      (lst.length ? '<div class="dp-cards">' + cards + '</div>' : '<div class="dp-empty">Nenhuma oferta cumpre estes filtros para ' + potTxt(POTS[S.pot]) + '. Tira um filtro ou muda a tarifa.</div>') +
+      (lst.length ? '<div class="dp-cards">' + cards + '</div>' : '<div class="dp-empty">' + (S.social && S.pot >= TS_POT.length ? 'A tarifa social só existe para potências contratadas até 6,9 kVA.' : 'Nenhuma oferta cumpre estes filtros para ' + potTxt(POTS[S.pot]) + '. Tira um filtro ou muda a tarifa.') + '</div>') +
       (lst.length > vis.length ? '<div class="dp-more"><button type="button" class="dp-btn is-secondary" id="elMore">Mostrar mais ' + Math.min(10, lst.length - vis.length) + ' de ' + (lst.length - vis.length) + '</button></div>' : '') +
       '<p class="dp-foot">Preços de todas as ofertas de eletricidade para clientes domésticos comunicadas pelos comercializadores à <a href="https://simuladorprecos.erse.pt/" target="_blank" rel="noopener">ERSE</a>, atualizados a ' + dataPT(S.data.atualizado) + ', para Portugal continental. Ficam de fora os pacotes de eletricidade com gás. ' +
       'A fatura inclui energia, potência, IVA, imposto especial de consumo e contribuição audiovisual, segue a metodologia do simulador de preços da ERSE e não inclui a taxa de exploração da DGEG (0,07€ por mês). ' +
-      'O desconto da tarifa social não está simulado. Os descontos de novo cliente valem só no primeiro ano. Confirma sempre as condições no site do comercializador antes de mudares.</p>';
+      'Com a opção "Tenho tarifa social", os preços levam o <a href="https://www.erse.pt/media/02gh5y04/tarifa-social-eletricidade-jan2026.pdf" target="_blank" rel="noopener">desconto fixado pela ERSE para 2026</a> (33,8% sobre a tarifa regulada), a isenção do imposto especial de consumo e a contribuição audiovisual reduzida. Os descontos de novo cliente valem só no primeiro ano. Confirma sempre as condições no site do comercializador antes de mudares.</p>';
   }
 
   /* ---------- Eventos ---------- */
@@ -388,6 +400,7 @@
     }
     if (t.closest('[data-novo]')) { S.novo = !S.novo; render(); return; }
     if (t.closest('[data-fam]')) { S.fam = !S.fam; render(); return; }
+    if (t.closest('[data-social]')) { S.social = !S.social; S.visible = 10; render(); return; }
     var c = t.closest('.dp-chip');
     if (c) { var k = c.getAttribute('data-f'); if (S.on[k]) delete S.on[k]; else S.on[k] = true; S.visible = 10; render(); return; }
     if (t.closest('#elMore')) { S.visible += 10; render(); return; }
@@ -471,7 +484,7 @@
     x.onerror = function () { S.erro = true; render(); };
     x.send();
   }
-  window.__lfElCalc = function (o, i, kwh, vz, novo, tarifa, pt, fam) { return calc(o, i, { kwh: kwh, vz: vz, pt: pt == null ? 0.2 : pt, novo: novo, fam: !!fam }, tarifa); };
+  window.__lfElCalc = function (o, i, kwh, vz, novo, tarifa, pt, fam, social) { return calc(o, i, { kwh: kwh, vz: vz, pt: pt == null ? 0.2 : pt, novo: novo, fam: !!fam, social: !!social }, tarifa); };
   window.__lfElExpandir = expandir; window.__lfElState = S; /* expostos para testes */
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar); else montar();
 })();
