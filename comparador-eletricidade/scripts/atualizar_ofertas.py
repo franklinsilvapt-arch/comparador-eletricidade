@@ -234,7 +234,7 @@ def main():
 
     flags = ["FiltroFidelização", "FiltroRenovavel_ELE", "FiltroRestrições", "FiltroPrecosIndex_ELE",
              "FiltroServicosAdic", "FiltroTarifaSocial", "FiltroReembolsos", "FiltroNovosClientes"]
-    ofertas, expiradas = [], 0
+    ofertas, expiradas, refs = [], 0, []
     for o in cond:
         if o.get("Fornecimento") != "ELE" or o.get("Segmento") not in ("Dom", "Tod"):
             continue
@@ -276,6 +276,10 @@ def main():
             v = txt(o, col, n)
             if v:
                 x[k] = v
+        if o.get("FiltroPrecosIndex_ELE") == "S":
+            m = re.search(r"(\d+,\d+)\s*€/kWh", o.get("TxTERSE") or "")
+            if m:
+                refs.append(round(num(m.group(1)) * 1000, 2))
         if (o.get("DuracaoContrato") or "").strip().isdigit():
             x["du"] = int(o["DuracaoContrato"])
         ini = (o.get("Data ini") or "").strip()
@@ -315,9 +319,12 @@ def main():
         "v": 3, "fonte": "ERSE - Ofertas comerciais (CSV)", "ficheiro": caminho if caminho.startswith("http") else "",
         "atualizado": atualizado, "pots": [float(p.replace(",", ".")) for p in POTS],
     }
-    for k in ("params", "params_data", "params_desvio", "nomes"):
+    for k in ("params", "params_data", "params_desvio", "nomes", "omie_ref"):
         if k in anteriores:
             dados[k] = anteriores[k]
+    # Preco OMIE (EUR/MWh) com que a ERSE calculou os precos das ofertas indexadas (futuros a 3 meses), lido do texto da ERSE
+    if refs:
+        dados["omie_ref"] = max(set(refs), key=refs.count)
 
     # Calibracao: parametros regulados, nomes e logotipos a partir do simulador da ERSE
     erro = None
@@ -337,6 +344,15 @@ def main():
         except Exception as e:
             erro = e
             print("CALIBRACAO FALHOU, ficam os parametros anteriores:", e, file=sys.stderr)
+    # Precos OMIE reais (data/omie.json), para recalcular as ofertas indexadas no comparador
+    if "--sem-omie" not in args:
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import omie
+            omie.atualizar()
+        except Exception as e:
+            print("OMIE FALHOU, fica o ficheiro anterior:", e, file=sys.stderr)
+            erro = erro or e
     # Ofertas em falta no ficheiro da ERSE, lidas do site do comercializador, e validacao contra o site
     if "--sem-sites" not in args:
         try:

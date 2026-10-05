@@ -6,6 +6,7 @@ Ferramenta da página `/comparador-eletricidade` do literaciafinanceira.pt.
 
 - `comparador-eletricidade.js` e `comparador-eletricidade.css`: a ferramenta. O CSS é um suplemento ao `comparador-depositos.css` (repositório `depositos-comparator`), que tem o design system comum.
 - `data/ofertas.json`: todas as ofertas de eletricidade para clientes domésticos (simples, bi-horária e tri-horária, de 1,15 a 41,4 kVA).
+- `data/omie.json` e `data/omie_qh.json`: preços OMIE (ver abaixo).
 - `logos/`: logótipos dos comercializadores, um PNG por código da ERSE em minúsculas.
 - `scripts/atualizar_ofertas.py`: gera o `ofertas.json` a partir do ficheiro oficial da ERSE.
 - `.github/workflows/atualizar-ofertas.yml`: corre o script todos os dias às 06:17 UTC.
@@ -26,6 +27,12 @@ Se a ERSE voltar a publicar a oferta, fica a versão da ERSE. As ofertas lidas d
 O script também compara algumas ofertas da ERSE com o site (hoje: YES Energy #SMARTLIVING). Se o preço não bater, a oferta sai do comparador até a diferença desaparecer.
 
 Qualquer falha de leitura deixa essa oferta de fora e faz o workflow terminar com erro (aviso por email do GitHub). As restantes ofertas são publicadas na mesma.
+
+## Tarifas indexadas e preços OMIE (scripts/omie.py)
+
+A ERSE calcula os preços das ofertas indexadas com um preço OMIE de referência (a média dos futuros para os próximos 3 meses, indicada no texto da ERSE e guardada em `omie_ref` no `ofertas.json`, em EUR/MWh). O comparador ajusta esses preços ao OMIE real: `preço = preço ERSE + PERDAS × (OMIE do período − referência)`, com `PERDAS = 1,16` (coeficiente médio de perdas em BTN usado nas fórmulas dos comercializadores).
+
+O `omie.py` lê todos os dias os ficheiros oficiais do OMIE (`marginalpdbcpt_AAAAMMDD.1`, preço de 15 em 15 minutos para Portugal) e escreve `data/omie.json` com a média dos últimos 30 dias e as médias por período horário (fora de vazio e vazio, ponta, cheias e vazio) nos ciclos diário e semanal, segundo os períodos horários da ERSE em hora legal. Os preços brutos ficam em cache em `data/omie_qh.json`. Sem `omie.json`, o comparador mostra a estimativa da ERSE.
 
 ## Cálculo da fatura
 

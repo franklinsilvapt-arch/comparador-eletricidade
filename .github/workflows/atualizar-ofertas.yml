@@ -25,7 +25,7 @@ jobs:
       - run: |
           git config user.name "lf-bot"
           git config user.email "bot@literaciafinanceira.pt"
-          git add comparador-eletricidade/data/ofertas.json
-          git commit -m "Ofertas da ERSE atualizadas" || echo "sem alterações"
+          git add comparador-eletricidade/data/ofertas.json comparador-eletricidade/data/omie.json comparador-eletricidade/data/omie_qh.json
+          git commit -m "Ofertas da ERSE e preços OMIE atualizados" || echo "sem alterações"
           git pull --rebase
           git push
