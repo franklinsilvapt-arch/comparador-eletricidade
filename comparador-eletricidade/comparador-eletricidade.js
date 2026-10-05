@@ -33,7 +33,7 @@
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261005i';
+  var VERSAO = '20261005j';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -434,7 +434,7 @@
     var txtNum = function (v) { return v > 0 ? milhar(String(v).replace('.', ',')) : ''; };
     var pfSel = PERFIS.filter(function (p) { return p.k === F.perfil; })[0] || null;
     var perfis = PERFIS.map(function (p) {
-      return '<button type="button" class="dp-irs-b' + (F.perfil === p.k ? ' is-on' : '') + '" data-perfil="' + p.k + '">' + p.l + '</button>';
+      return '<button type="button" class="dp-irs-b' + (F.perfil === p.k ? ' is-on' : '') + '" data-perfil="' + p.k + '">' + p.l + '<small>' + milhar(String(Math.round(p.kwh / 12))) + ' kWh · ' + potTxt(POTS[p.pot]) + '</small></button>';
     }).join('');
     var chips = '<button type="button" class="dp-chip' + (S.idx ? '' : ' is-on') + '" data-idx>' + ico(IC.wave) + 'Só tarifas de preço fixo' + (S.idx ? '' : ' (' + res.nIdx + ' indexadas de fora)') + '</button>' + FILTROS.map(function (f) {
       return '<button type="button" class="dp-chip' + (S.on[f.k] ? ' is-on' : '') + '" data-f="' + f.k + '">' + ico(IC[f.i]) + esc(f.l) + '</button>';
@@ -488,8 +488,8 @@
       '</div>' +
       '<p class="el-ajuda">' + (F.kwhIn > 0 && F.eurIn > 0 && F.eurTocado ? 'A poupança é calculada face aos <b>' + eurInt(F.eurIn) + '</b> que pagas hoje.' : F.kwhIn > 0 && F.eurIn > 0 ? 'Os ' + eurInt(F.eurIn) + ' são um exemplo: põe o que pagas para veres a poupança face à tua fatura.' : F.eurIn > 0 ? (F.eurTocado ? 'Com ' + eurInt(F.eurIn) + ' estimamos cerca de <b>' + milhar(String(Math.round(F.kwhMes))) + ' kWh</b> por mês aos preços do regulado. Se souberes o consumo em kWh, põe-no ao lado.' : 'Valor de exemplo (cerca de <b>' + milhar(String(Math.round(F.kwhMes))) + ' kWh</b> por mês). Põe o que pagas, ou o consumo em kWh se o souberes.') : F.kwhIn > 0 ? (F.meuId ? 'A poupança é calculada face ao teu tarifário atual.' : 'Põe também quanto pagas para veres a poupança face à tua fatura.') : 'Basta um dos dois. Os dois estão na fatura.') + '</p>' +
       '<div class="el-via-g"><label class="dp-label" for="elPot">Potência contratada</label><select class="dp-input dp-input-select" id="elPot">' + potOpts + '</select></div>' +
-      '<div class="el-via-g"><span class="dp-label">Sem fatura? Escolhe o perfil mais parecido</span><div class="el-perfis">' + perfis + '</div>' +
-      (pfSel ? '<p class="el-ajuda">Exemplo: ' + potTxt(POTS[pfSel.pot]) + ' e cerca de <b>' + milhar(String(Math.round(pfSel.kwh / 12))) + ' kWh</b> por mês.</p>' : '') + '</div>' +
+      '<div class="el-via-g"><span class="dp-label">Não sabes o consumo? Usa os valores típicos de uma casa como a tua</span><div class="el-perfis">' + perfis + '</div>' +
+      '</div>' +
       '</section>' +
       '<div class="el-ou" aria-hidden="true"><span>ou</span></div>' +
       '<section class="el-via el-via-pdf"><div class="el-via-h"><span class="el-via-t">Carregar a fatura em PDF</span><span class="el-via-s">Lemos o consumo, a potência e a tarifa por ti.</span></div>' +
