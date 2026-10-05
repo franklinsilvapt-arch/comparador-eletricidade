@@ -32,6 +32,13 @@
   var PERDAS = 1.16;
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
+  /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
+  var VERSAO = '20261005b';
+  (function () {
+    var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
+    if (document.querySelector('link[href="' + href + '"]')) return;
+    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l);
+  })();
   /* Estes valores sao so a reserva: o ofertas.json traz os parametros calibrados todos os dias com o simulador da ERSE. */
   function aplicarParams(P) {
     if (!P) return;
@@ -408,6 +415,7 @@
     var op = function (v, sel, txt) { return '<option value="' + v + '"' + (sel === v ? ' selected' : '') + '>' + txt + '</option>'; };
     var vzOpts = [10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80].map(function (v) { return op(v, F.vazio, v + '% em vazio'); }).join('');
     var ptOpts = [10, 15, 20, 25, 30, 35].map(function (v) { return op(v, F.ponta, v + '% em ponta'); }).join('');
+    var pfSel = PERFIS.filter(function (p) { return p.k === F.perfil; })[0] || null;
     var perfis = PERFIS.map(function (p) {
       return '<button type="button" class="dp-irs-b' + (F.perfil === p.k ? ' is-on' : '') + '" data-perfil="' + p.k + '">' + p.l + '</button>';
     }).join('');
@@ -462,12 +470,13 @@
       '<p class="el-ajuda">' + (F.unid === 'eur' ? 'Põe o valor da fatura. Equivale a cerca de <b>' + milhar(String(Math.round(F.kwhMes))) + ' kWh</b> por mês aos preços do mercado regulado.' : 'O consumo em kWh está na tua fatura.') + '</p></div>' +
       '<div class="el-via-g"><label class="dp-label" for="elPot">Potência contratada</label><select class="dp-input dp-input-select" id="elPot">' + potOpts + '</select>' +
       '<p class="el-ajuda">Está na fatura. As mais comuns são 3,45 e 6,9 kVA.</p></div>' +
-      '<div class="el-via-g"><span class="dp-label">Não sabes? Escolhe o caso mais parecido</span><div class="el-perfis">' + perfis + '</div></div>' +
+      '<div class="el-via-g"><span class="dp-label">Não tens a fatura à mão? Usa um exemplo e ajusta depois</span><div class="el-perfis">' + perfis + '</div>' +
+      '<p class="el-ajuda">' + (pfSel ? 'Exemplo: ' + potTxt(POTS[pfSel.pot]) + ' e cerca de <b>' + milhar(String(Math.round(pfSel.kwh / 12))) + ' kWh</b> por mês. Podes mudar os valores em cima.' : 'Consumos típicos: ' + PERFIS.map(function (p) { return p.l.toLowerCase() + ' ' + milhar(String(Math.round(p.kwh / 12))) + ' kWh'; }).join(', ') + ' por mês.') + '</p></div>' +
       '</section>' +
       '<div class="el-ou" aria-hidden="true"><span>ou</span></div>' +
       '<section class="el-via el-via-pdf"><div class="el-via-h"><span class="el-via-t">Carregar a fatura em PDF</span><span class="el-via-s">Preenchemos tudo por ti: consumo, potência, tarifa e, se der, o teu tarifário.</span></div>' +
       zonaFatura() +
-      '<input type="file" id="elFatura" accept="application/pdf,.pdf" class="el-fat-in" tabindex="-1" aria-hidden="true">' +
+      '<input type="file" id="elFatura" accept="application/pdf,.pdf" class="el-fat-in" tabindex="-1" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none">' +
       '</section></div>' +
       '<div class="el-rapido el-meu"><label class="dp-label" for="elMeuCom">Já tens contrato? Compara com o teu tarifário atual</label><div class="el-duo">' +
       '<select class="dp-input dp-input-select" id="elMeuCom" aria-label="O teu comercializador">' + meuComOpts + '</select>' +
