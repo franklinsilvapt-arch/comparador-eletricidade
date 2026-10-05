@@ -23,8 +23,10 @@
 #lf-dp .el-caso{margin-top:20px;text-align:left}
 #lf-dp .el-caso-c{display:flex;flex-wrap:wrap;gap:8px}
 #lf-dp .el-caso-c .dp-chip{flex:0 0 auto}
-#lf-dp .dp-kpi-v.el-pos{color:var(--color-success-700)}
-#lf-dp .dp-kpi-v.el-neg{color:#697386}
+#lf-dp .dp-kpi-v.el-pos,#lf-dp .el-poup.el-pos{color:var(--color-success-700);font-weight:600}
+#lf-dp .dp-kpi-v.el-neg,#lf-dp .el-poup.el-neg{color:#697386;font-weight:600}
+#lf-dp .el-poup.is-ref{font-weight:500;color:var(--text-secondary)}
+#lf-dp .el-kpi-fat{min-width:190px}
 #lf-dp .dp-c-main{grid-template-columns:28px 236px 1fr 184px}
 #lf-dp .dp-prod{max-width:180px}
 #lf-dp .dp-kpi-s{white-space:normal}

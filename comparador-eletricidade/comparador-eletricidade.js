@@ -33,7 +33,7 @@
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261005n';
+  var VERSAO = '20261005o';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -280,11 +280,13 @@
   function cartao(it, idx, base, baseLabel) {
     var o = it.o, r = it.r, nome = nomeDe(o.c), aberto = S.open === o.id;
     var dif = base != null ? base - r.total : null, poup;
-    if (o.c === 'TUR' && !(S.eurIn > 0 && S.eurTocado) && !S.meuId) poup = '<div class="dp-kpi-v is-plain" style="color:#697386">–</div><div class="dp-kpi-s">é a referência</div>';
-    else if (dif == null) poup = '<div class="dp-kpi-v is-plain" style="color:#697386">–</div><div class="dp-kpi-s">&nbsp;</div>';
-    else if (dif >= 0.5) poup = '<div class="dp-kpi-v el-pos">' + eur(dif / 12) + '</div><div class="dp-kpi-s">a menos por mês · ' + eurInt(dif) + ' por ano</div>';
-    else if (dif <= -0.5) poup = '<div class="dp-kpi-v is-plain el-neg">+' + eur(-dif / 12) + '</div><div class="dp-kpi-s">a mais por mês · ' + eurInt(-dif) + ' por ano</div>';
-    else poup = '<div class="dp-kpi-v is-plain">Igual</div><div class="dp-kpi-s">&nbsp;</div>';
+    /* linha da poupanca, por baixo da fatura por mes: "4,02€ a menos por mês face ao regulado" */
+    var ref = baseLabel.replace(/^Face /, 'face ');
+    if (o.c === 'TUR' && !(S.eurIn > 0 && S.eurTocado) && !S.meuId) poup = '<span class="el-poup is-ref">É a referência</span>';
+    else if (dif == null) poup = '';
+    else if (dif >= 0.5) poup = '<span class="el-poup el-pos">' + eur(dif / 12) + ' a menos por mês</span> ' + ref;
+    else if (dif <= -0.5) poup = '<span class="el-poup el-neg">' + eur(-dif / 12) + ' a mais por mês</span> ' + ref;
+    else poup = '<span class="el-poup is-ref">Igual ' + ref + '</span>';
 
     var ek = energiaKpi(r), link = url(o.u);
     var cta = link ? '<a class="dp-btn" href="' + link + '" target="_blank" rel="nofollow noopener" data-stop>Ir para a ' + esc(o.c === 'TUR' ? 'SU Eletricidade' : nome) + ico(IC.out) + '</a>' : '';
@@ -295,11 +297,10 @@
       '<div class="dp-c-head"><span class="dp-name">' + esc(nome) + '</span></div>' +
       '<div class="dp-prod">' + esc(o.n) + '</div>' + tags(o) + '</div></div>' +
       '<div class="dp-kpis">' +
-      '<div class="dp-kpi"><div class="dp-kpi-l">' + (o.f.charAt(3) === '1' ? 'Fatura estimada' : 'Fatura por mês') + '</div><div class="dp-kpi-v">' + eur(r.mes) + '</div><div class="dp-kpi-s">' + eurInt(r.total) + ' por ano' + (r.omie ? ' · OMIE de ' + num(S.omie.media, 0) + '€/MWh' : '') + '</div></div>' +
+      '<div class="dp-kpi el-kpi-fat"><div class="dp-kpi-l">' + (o.f.charAt(3) === '1' ? 'Fatura estimada por mês' : 'Fatura por mês') + '</div><div class="dp-kpi-v">' + eur(r.mes) + '</div><div class="dp-kpi-s">' + (poup ? poup + '<br>' : '') + eurInt(r.total) + ' por ano' + (r.omie ? ' · OMIE de ' + num(S.omie.media, 0) + '€/MWh' : '') + '</div></div>' +
       '<div class="dp-kpi"><div class="dp-kpi-l">Tarifa</div><div class="dp-kpi-v is-plain">' + TARIFAS[r.k] + '</div><div class="dp-kpi-s">' + (S.tarifa === 'auto' ? 'a mais barata para ti' : '&nbsp;') + '</div></div>' +
       '<div class="dp-kpi"><div class="dp-kpi-l">Energia</div><div class="dp-kpi-v is-plain">' + ek[0] + '</div><div class="dp-kpi-s">' + ek[1] + '</div></div>' +
       '<div class="dp-kpi"><div class="dp-kpi-l">Potência</div><div class="dp-kpi-v is-plain">' + num(r.p[0], 4) + '€</div><div class="dp-kpi-s">por dia, sem IVA</div></div>' +
-      '<div class="dp-kpi"><div class="dp-kpi-l">' + esc(baseLabel) + '</div>' + poup + '</div>' +
       '</div>' +
       '<div class="dp-c-cta">' + cta + '<span class="dp-kpi-s">' + (o.f.charAt(3) === '1' ? 'Preço varia com o mercado' : (o.du ? 'Contrato de ' + meses(o.du) : '&nbsp;')) + '</span></div></div>';
 
