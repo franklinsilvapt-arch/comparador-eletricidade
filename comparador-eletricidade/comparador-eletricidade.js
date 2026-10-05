@@ -77,7 +77,7 @@
     data: null, erro: false,
     unid: 'eur', valor: 37, kwhMes: 1900 / 12, pot: 2, tarifa: 'auto', vazio: 40, ponta: 20, fam: false, social: false, idx: true, mais: false, ciclo: 'd', omie: null,
     on: {}, novo: true, open: null, visible: 10, formOpen: false, perfil: null,
-    ver: 'melhor', com: '', sort: 'total'
+    ver: 'melhor', com: '', sort: 'total', meuCom: '', meuId: ''
   };
 
   /* ---------- Helpers ---------- */
@@ -108,7 +108,8 @@
     fam: '<circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2M15 14h3a3 3 0 0 1 3 3v4"/>',
     heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/>',
     wave: '<path d="M3 17l5-6 4 3 4-7 5 6"/>',
-    out: '<path d="M7 17 17 7M7 7h10v10"/>'
+    out: '<path d="M7 17 17 7M7 7h10v10"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'
   };
   var CARET = '<svg class="dp-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
 
@@ -216,6 +217,7 @@
     if (o.f.charAt(2) === '1') t.push('<span class="dp-tag">Condições de acesso</span>');
     if (o.f.charAt(1) === '1') t.push('<span class="dp-tag">100% renovável</span>');
     if (o.src === 'site') t.push('<span class="dp-tag">Preço do site da empresa</span>');
+    if (o.id === S.meuId) t.push('<span class="dp-tag is-warn">O teu tarifário atual</span>');
     return t.join(' ');
   }
   function iniciais(nome) {
@@ -367,7 +369,14 @@
     var res = resultados(), lst = res.lista, vis = lst.slice(0, S.visible);
     var eurM = S.unid === 'eur' && S.valor > 0;
     var base = eurM ? S.valor * 12 : (res.reg ? res.reg.total : null);
-    var baseLabel = eurM ? 'Face à tua fatura' : 'Face ao regulado';
+    var baseLabel = eurM ? 'Face à tua fatura' : 'Face ao regulado', baseTxt = eurM ? 'a tua fatura' : 'o mercado regulado';
+    var meu = null;
+    if (S.meuId) {
+      var mo = null;
+      for (var q = 0; q < S.data.ofertas.length; q++) if (S.data.ofertas[q].id === S.meuId) { mo = S.data.ofertas[q]; break; }
+      var mr = mo ? calc(mo, S.pot, ctx(), S.tarifa) : null;
+      if (mr) { meu = { o: mo, r: mr }; base = mr.total; baseLabel = 'Face ao teu tarifário'; baseTxt = 'o teu tarifário atual'; }
+    }
     var tri = S.tarifa === 't' || (S.tarifa === 'auto' && POTS[S.pot] > 20.7);
 
     var potOpts = POTS.map(function (p, i) { return '<option value="' + i + '"' + (S.pot === i ? ' selected' : '') + '>' + potTxt(p) + '</option>'; }).join('');
@@ -402,13 +411,17 @@
     if (res.melhor) {
       var m = res.melhor, dm = base != null ? base - m.r.total : 0;
       mk = '<div class="dp-mk"><b>' + res.nOfertas + '</b> ofertas de <b>' + res.coms.length + '</b> comercializadores' + (S.idx ? '' : ', só de preço fixo') + '<span class="dp-mk-sep">·</span>A mais barata: <b>' + esc(nomeDe(m.o.c)) + '</b>, ' + eur(m.r.mes) + ' por mês' +
-        (dm >= 0.5 ? '<span class="dp-mk-sep">·</span><b>' + eurInt(dm) + '</b> a menos por ano do que ' + (eurM ? 'a tua fatura' : 'o mercado regulado') : '') + (S.social ? '<span class="dp-mk-sep">·</span>Com tarifa social' : '') + '</div>';
+        (dm >= 0.5 ? '<span class="dp-mk-sep">·</span><b>' + eurInt(dm) + '</b> a menos por ano do que ' + baseTxt : '') + (meu ? '<span class="dp-mk-sep">·</span>O teu tarifário: ' + eur(meu.r.mes) + ' por mês' : '') + (S.social ? '<span class="dp-mk-sep">·</span>Com tarifa social' : '') + '</div>';
     }
 
+    var todosComs = Object.keys(S.data.ofertas.reduce(function (m, o) { m[o.c] = 1; return m; }, {})).sort(function (a, b) { return nomeDe(a).localeCompare(nomeDe(b), 'pt'); });
+    var meuComOpts = op('', S.meuCom, 'Não comparar com o meu tarifário') + todosComs.map(function (k) { return op(k, S.meuCom, esc(nomeDe(k))); }).join('');
+    var meuOfOpts = op('', S.meuId, S.meuCom ? 'Escolhe o tarifário' : 'Primeiro o comercializador') + (S.meuCom ? S.data.ofertas.filter(function (o) { return o.c === S.meuCom && (o.s && o.s[S.pot] || o.b && o.b[S.pot] || o.t && o.t[S.pot]); })
+      .map(function (o) { return op(o.id, S.meuId, esc(o.n) + (o.f.charAt(3) === '1' ? ' (indexada)' : '')); }).join('') : '');
     var comOpts = op('', S.com, 'Todos os comercializadores') + res.coms.slice().sort(function (a, b) { return nomeDe(a).localeCompare(nomeDe(b), 'pt'); })
       .map(function (k) { return op(k, S.com, esc(nomeDe(k))); }).join('');
     if (S.com && res.coms.indexOf(S.com) < 0) comOpts += op(S.com, S.com, esc(nomeDe(S.com)));
-    var ctl = '<div class="el-ctl"><span class="dp-count">' + lst.length + (lst.length === 1 ? ' resultado' : ' resultados') + '</span><div class="el-ctl-r">' +
+    var ctl = '<div class="el-ctl"><span class="dp-count">' + lst.length + (lst.length === 1 ? ' resultado' : ' resultados') + '<button type="button" class="dp-chip el-share' + (S.copiado ? ' is-on' : '') + '" data-share title="Copiar o link desta simulação">' + ico(IC.link) + (S.copiado ? 'Link copiado' : 'Partilhar') + '</button></span><div class="el-ctl-r">' +
       '<select class="dp-select" id="elVer" aria-label="O que mostrar"' + (S.com ? ' disabled' : '') + '>' + op('melhor', S.com ? 'todas' : S.ver, 'A melhor oferta de cada empresa') + op('todas', S.com ? 'todas' : S.ver, 'Todas as ofertas') + '</select>' +
       '<select class="dp-select" id="elCom" aria-label="Comercializador">' + comOpts + '</select>' +
       '<select class="dp-select" id="elSort" aria-label="Ordenar por">' + op('total', S.sort, 'Fatura mais baixa') + op('energia', S.sort, 'Energia mais barata') + op('potencia', S.sort, 'Potência mais barata') + op('nome', S.sort, 'Nome do comercializador') + '</select>' +
@@ -428,6 +441,10 @@
       '<p class="el-ajuda">Está na fatura. As mais comuns são 3,45 e 6,9 kVA.</p></div>' +
       '</div>' +
       '<div class="el-rapido"><span class="dp-label">Não sabes? Escolhe o caso mais parecido</span><div class="el-perfis">' + perfis + '</div></div>' +
+      '<div class="el-rapido el-meu"><label class="dp-label" for="elMeuCom">Já tens contrato? Compara com o teu tarifário atual</label><div class="el-duo">' +
+      '<select class="dp-input dp-input-select" id="elMeuCom" aria-label="O teu comercializador">' + meuComOpts + '</select>' +
+      '<select class="dp-input dp-input-select" id="elMeuOf" aria-label="O teu tarifário"' + (S.meuCom ? '' : ' disabled') + '>' + meuOfOpts + '</select></div>' +
+      '<p class="el-ajuda">' + (meu ? 'Com o teu consumo, o <b>' + esc(nomeDe(meu.o.c)) + ' · ' + esc(meu.o.n) + '</b> custa <b>' + eur(meu.r.mes) + ' por mês</b> (' + eurInt(meu.r.total) + ' por ano). As poupanças abaixo são face a este valor.' : 'O nome do tarifário está na fatura. Se não o encontrares, a comparação é feita com o valor da fatura que puseste em cima.') + '</p></div>' +
       '<button type="button" class="el-mais' + (S.mais ? ' is-open' : '') + '" data-mais aria-expanded="' + (S.mais ? 'true' : 'false') + '">Mais opções: tarifa, consumo em vazio, tarifa social' + CARET + '</button>' +
       (S.mais ? '<div class="el-avancado"><div class="el-av-g">' +
         '<div><span class="dp-label">Tarifa</span><div class="dp-toggle el-toggle4">' + tarifas + '</div></div>' + horas + '</div>' +
@@ -456,6 +473,7 @@
     if (t.closest('[data-cardtoggle]')) { S.formOpen = !S.formOpen; render(); return; }
     if (t.closest('[data-mais]')) { S.mais = !S.mais; render(); return; }
     if (t.closest('[data-idx]')) { S.idx = !S.idx; S.visible = 10; render(); return; }
+    if (t.closest('[data-share]')) { partilhar(); return; }
     var un = t.closest('[data-unid]');
     if (un) {
       var nova = un.getAttribute('data-unid');
@@ -509,6 +527,8 @@
     if (id === 'elPonta') { S.ponta = parseInt(v, 10) || 20; render(); }
     if (id === 'elVer') { S.ver = v; S.visible = 10; render(); }
     if (id === 'elCom') { S.com = v; S.visible = 10; render(); }
+    if (id === 'elMeuCom') { S.meuCom = v; S.meuId = ''; render(); }
+    if (id === 'elMeuOf') { S.meuId = v; render(); }
     if (id === 'elSort') { S.sort = v; S.visible = 10; render(); }
   });
 
@@ -533,6 +553,51 @@
   }
 
   /* ---------- Arranque ---------- */
+  /* ---------- Estado no URL (link partilhavel) ---------- */
+  var URL_KEYS = { val: 'valor', un: 'unid', pot: 'pot', tar: 'tarifa', vz: 'vazio', pt: 'ponta', ci: 'ciclo', meu: 'meuId', com: 'com', ver: 'ver', ord: 'sort' };
+  var URL_BOOL = { fam: 'fam', soc: 'social', novo: 'novo', fixo: 'idx' };
+  function lerURL() {
+    var q = {};
+    String(location.search || '').replace(/^\?/, '').split('&').forEach(function (kv) { var p = kv.split('='); if (p[0]) q[decodeURIComponent(p[0])] = decodeURIComponent((p[1] || '').replace(/\+/g, ' ')); });
+    if (!q.sim) return false;
+    if (q.un === 'eur' || q.un === 'kwh') S.unid = q.un;
+    var v = parseFloat(String(q.val || '').replace(',', '.')); if (v > 0 && v < 100000) S.valor = v;
+    var pi = parseInt(q.pot, 10); if (pi >= 0 && pi < POTS.length) S.pot = pi;
+    if (q.tar in TARIFAS || q.tar === 'auto') S.tarifa = q.tar;
+    var vz = parseInt(q.vz, 10); if (vz >= 5 && vz <= 90) S.vazio = vz;
+    var pt = parseInt(q.pt, 10); if (pt >= 5 && pt <= 60) S.ponta = pt;
+    if (q.ci === 'd' || q.ci === 's') S.ciclo = q.ci;
+    if (q.meu && /^[\w -]{1,40}$/.test(q.meu)) S.meuId = q.meu; /* o comercializador e preenchido quando os dados chegam */
+    if (q.com && /^[\w ]{1,30}$/.test(q.com)) S.com = q.com;
+    if (q.ver === 'todas') S.ver = 'todas';
+    if (q.ord === 'energia' || q.ord === 'potencia' || q.ord === 'nome') S.sort = q.ord;
+    S.fam = q.fam === '1'; S.social = q.soc === '1'; S.novo = q.novo !== '0'; S.idx = q.fixo !== '1';
+    S.on = {}; String(q.f || '').split(',').forEach(function (k) { if (FILTROS.some(function (x) { return x.k === k; })) S.on[k] = true; });
+    if (S.tarifa !== 'auto' || S.fam || S.social || Object.keys(S.on).length) S.mais = true;
+    return true;
+  }
+  function urlSim() {
+    var p = ['sim=1', 'val=' + encodeURIComponent(String(S.valor)), 'un=' + S.unid, 'pot=' + S.pot];
+    if (S.tarifa !== 'auto') p.push('tar=' + S.tarifa);
+    if (S.vazio !== 40) p.push('vz=' + S.vazio);
+    if (S.ponta !== 20) p.push('pt=' + S.ponta);
+    if (S.ciclo !== 'd') p.push('ci=' + S.ciclo);
+    if (S.meuId) p.push('meu=' + encodeURIComponent(S.meuId));
+    if (S.com) p.push('com=' + encodeURIComponent(S.com));
+    if (S.ver === 'todas') p.push('ver=todas');
+    if (S.sort !== 'total') p.push('ord=' + S.sort);
+    if (S.fam) p.push('fam=1'); if (S.social) p.push('soc=1'); if (!S.novo) p.push('novo=0'); if (!S.idx) p.push('fixo=1');
+    var f = Object.keys(S.on).filter(function (k) { return S.on[k]; }); if (f.length) p.push('f=' + f.join(','));
+    return location.origin + location.pathname + '?' + p.join('&');
+  }
+  function partilhar() {
+    var u = urlSim();
+    try { history.replaceState(null, '', u); } catch (e) { }
+    var feito = function () { S.copiado = true; render(); setTimeout(function () { S.copiado = false; render(); }, 2500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(feito, feito);
+    else { try { var ta = document.createElement('textarea'); ta.value = u; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch (e) { } feito(); }
+  }
+
   function montar() {
     if (!document.getElementById('lf-dp')) {
       var alvo = document.getElementById('lf-pc-calc'), div = document.createElement('div');
@@ -540,6 +605,7 @@
       if (alvo) alvo.parentNode.replaceChild(div, alvo);
       else { var h1 = document.querySelector('h1.heading-style-h2'); if (h1 && h1.parentNode) h1.parentNode.appendChild(div); else return; }
     }
+    try { lerURL(); } catch (e) { }
     render();
     var y = new XMLHttpRequest();
     y.open('GET', OMIE_URL + '?d=' + new Date().toISOString().slice(0, 10));
@@ -556,6 +622,7 @@
         if (d.nomes) NOMES_ERSE = d.nomes;
         if (d.logos) { LOGOS = {}; d.logos.forEach(function (c) { LOGOS[c] = 1; }); }
         d.ofertas.forEach(expandir); S.data = d;
+        if (S.meuId) { var mine = null; d.ofertas.forEach(function (o) { if (o.id === S.meuId) mine = o; }); if (mine) S.meuCom = mine.c; else S.meuId = ''; }
         atualizarConsumo();
       } catch (err) { S.erro = true; }
       render();
