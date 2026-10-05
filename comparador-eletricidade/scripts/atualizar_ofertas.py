@@ -337,12 +337,27 @@ def main():
         except Exception as e:
             erro = e
             print("CALIBRACAO FALHOU, ficam os parametros anteriores:", e, file=sys.stderr)
+    # Ofertas em falta no ficheiro da ERSE, lidas do site do comercializador, e validacao contra o site
+    if "--sem-sites" not in args:
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import fontes_extra
+            ofertas, erros_sites = fontes_extra.aplicar(ofertas)
+            for e in erros_sites:
+                print("FONTE DO SITE FALHOU:", e, file=sys.stderr)
+            if erros_sites and not erro:
+                erro = RuntimeError("; ".join(erros_sites))
+        except Exception as e:
+            print("FONTES DOS SITES FALHARAM:", e, file=sys.stderr)
+            erro = erro or e
+        coms = sorted({o["c"] for o in ofertas})
     dados["logos"] = sorted(c for c in coms if os.path.exists(os.path.join(LOGOS, c.lower().replace(" ", "") + ".png")))
     dados["ofertas"] = ofertas
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"{len(ofertas)} ofertas de {len(coms)} comercializadores ({expiradas} expiradas ignoradas), ficheiro ERSE de {atualizado}")
+    n_site = sum(1 for o in ofertas if o.get("src") == "site")
+    print(f"{len(ofertas)} ofertas de {len(coms)} comercializadores ({n_site} lidas dos sites, {expiradas} expiradas ignoradas), ficheiro ERSE de {atualizado}")
     publicar("Ofertas da ERSE atualizadas")
     if erro:
         sys.exit(1)

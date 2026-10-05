@@ -202,6 +202,7 @@
     if (o.f.charAt(4) === '1') t.push('<span class="dp-tag is-warn">Serviços adicionais</span>');
     if (o.f.charAt(2) === '1') t.push('<span class="dp-tag">Condições de acesso</span>');
     if (o.f.charAt(1) === '1') t.push('<span class="dp-tag">100% renovável</span>');
+    if (o.src === 'site') t.push('<span class="dp-tag">Preço do site da empresa</span>');
     return t.join(' ');
   }
   function iniciais(nome) {
@@ -291,11 +292,12 @@
       kv('Energia 100% renovável', o.f.charAt(1) === '1' ? 'Sim' : 'Não') +
       (o.m ? kv('Modalidade', esc(o.m)) : '') +
       (o.tel ? kv('Telefone comercial', esc(o.tel)) : '') +
-      (o.ini || o.fim ? kv('Validade dos preços', esc((o.ini ? 'de ' + o.ini + ' ' : '') + (o.fim ? 'até ' + o.fim : ''))) : '');
+      (o.src === 'site' ? kv('Preços lidos no site', esc(o.ini || '')) : (o.ini || o.fim ? kv('Validade dos preços', esc((o.ini ? 'de ' + o.ini + ' ' : '') + (o.fim ? 'até ' + o.fim : ''))) : ''));
     var docs = [a(o.fp, 'Ficha padronizada'), a(o.cg, 'Condições gerais'), a(o.ce, 'Contratar online')].filter(Boolean);
     if (docs.length) cond += kv('Documentos', docs.join(' · '));
 
     var notas = [];
+    if (o.src === 'site') notas.push('<b>Fonte.</b> Esta oferta está em vigor mas ainda não aparece no ficheiro da ERSE. Os preços foram lidos no site do comercializador, que é a fonte oficial da oferta.');
     if (o.f.charAt(3) === '1') notas.push('<b>Preço indexado.</b> O valor mostrado é uma estimativa da ERSE com base no preço esperado do mercado grossista para os próximos três meses. A fatura real sobe e desce com o mercado.');
     if (o.to) notas.push('<b>A oferta.</b> ' + esc(o.to));
     if (o.f.charAt(0) === '1' && o.tfi) notas.push('<b>Fidelização.</b> ' + esc(o.tfi));
@@ -308,7 +310,7 @@
 
     return '<div class="dp-c-detail"><div class="dp-detail-grid"><div><div class="dp-h">Como se chega a ' + eur(r.total) + ' por ano</div>' + linhas + tabOps +
       '</div><div><div class="dp-h">Condições</div>' + cond + '</div></div>' +
-      (notas.length ? '<div class="dp-h el-h-notas">O que o comercializador comunicou à ERSE</div><ul class="dp-notes el-notas"><li>' + notas.join('</li><li>') + '</li></ul>' : '') + '</div>';
+      (notas.length ? '<div class="dp-h el-h-notas">' + (o.src === 'site' ? 'O que o comercializador indica no site' : 'O que o comercializador comunicou à ERSE') + '</div><ul class="dp-notes el-notas"><li>' + notas.join('</li><li>') + '</li></ul>' : '') + '</div>';
   }
 
   var AR = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
@@ -316,7 +318,7 @@
   function cabecalho() {
     var n = S.data ? S.data.ofertas.length : 0, c = S.data ? Object.keys(S.data.ofertas.reduce(function (m, o) { m[o.c] = 1; return m; }, {})).length : 0;
     return '<div class="max-width-37-5 dp-lead"><div class="text-color-secondary"><div class="text-size-large"><div class="text-align-center">' +
-      'Indica o teu consumo e vê quanto pagas por mês em ' + (n ? n + ' ofertas de ' + c + ' comercializadores' : 'cada comercializador') + '. Os preços são os que as empresas comunicam à ERSE, o regulador da energia, e são atualizados todos os dias.' +
+      'Indica o teu consumo e vê quanto pagas por mês em ' + (n ? n + ' ofertas de ' + c + ' comercializadores' : 'cada comercializador') + '. Os preços são os que as empresas comunicam à ERSE, o regulador da energia. Quando a ERSE ainda não publicou uma oferta em vigor, usamos o preço do site da empresa. Tudo é atualizado todos os dias.' +
       '</div></div></div></div>' +
       '<div class="dp-meta"><div class="dp-authors">' +
       '<a class="dp-author" href="https://www.literaciafinanceira.pt/autores/franklin-silva"><img class="dp-author-img" src="https://cdn.prod.website-files.com/67922c46c9da6bf5d9bfdf20/683ee0ae5bc67fe0ef48466e_franklin-silva.avif" alt="Franklin Silva"><span><span class="dp-author-l">Autor</span><span class="dp-author-n">Franklin Silva</span></span></a>' +
@@ -413,7 +415,7 @@
       (lst.length ? '<div class="dp-cards">' + cards + '</div>' : '<div class="dp-empty">' + (S.social && S.pot >= TS_POT.length ? 'A tarifa social só existe para potências contratadas até 6,9 kVA.' : 'Nenhuma oferta cumpre estes filtros para ' + potTxt(POTS[S.pot]) + '. Tira um filtro ou muda a tarifa.') + '</div>') +
       (lst.length > vis.length ? '<div class="dp-more"><button type="button" class="dp-btn is-secondary" id="elMore">Mostrar mais ' + Math.min(10, lst.length - vis.length) + ' de ' + (lst.length - vis.length) + '</button></div>' : '') +
       '<p class="dp-foot">Preços de todas as ofertas de eletricidade para clientes domésticos comunicadas pelos comercializadores à <a href="https://simuladorprecos.erse.pt/" target="_blank" rel="noopener">ERSE</a>, atualizados a ' + dataPT(S.data.atualizado) + ', para Portugal continental. Ficam de fora os pacotes de eletricidade com gás. ' +
-      'A fatura inclui energia, potência, IVA, imposto especial de consumo, contribuição audiovisual e taxa de exploração da DGEG (0,07€ por mês mais IVA). Segue a metodologia do simulador de preços da ERSE, que não conta esta taxa. Quando uma oferta chega ao fim e o comercializador ainda não comunicou a renovação à ERSE, a oferta deixa de aparecer aqui e no simulador da ERSE até a nova versão ser publicada. ' +
+      'A fatura inclui energia, potência, IVA, imposto especial de consumo, contribuição audiovisual e taxa de exploração da DGEG (0,07€ por mês mais IVA). Segue a metodologia do simulador de preços da ERSE, que não conta esta taxa. Quando uma oferta em vigor ainda não está no ficheiro da ERSE, os preços são lidos todos os dias no site do comercializador e a oferta mostra essa fonte. A fatura por mês é a média do ano (o total anual a dividir por 12), por isso uma fatura real de 30 ou 31 dias pode diferir alguns cêntimos. ' +
       'As tarifas indexadas ficam de fora por omissão, porque o preço muda todos os meses com o mercado grossista e o valor mostrado é só uma estimativa da ERSE. ' +
       'Com a opção "Tenho tarifa social", os preços levam o <a href="https://www.erse.pt/media/02gh5y04/tarifa-social-eletricidade-jan2026.pdf" target="_blank" rel="noopener">desconto fixado pela ERSE para 2026</a> (33,8% sobre a tarifa regulada), a isenção do imposto especial de consumo e a contribuição audiovisual reduzida. Os descontos de novo cliente valem só no primeiro ano. Confirma sempre as condições no site do comercializador antes de mudares.</p>';
   }
