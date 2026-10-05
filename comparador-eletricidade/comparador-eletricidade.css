@@ -74,7 +74,9 @@
 #lf-dp .el-fat-x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:18px;line-height:1;color:var(--text-quaternary);cursor:pointer;padding:4px}
 #lf-dp .el-fat-outra{margin-top:10px;align-self:flex-start;border:0;background:none;padding:0;font:inherit;font-size:13px;font-weight:500;color:var(--text-primary);text-decoration:underline;text-underline-offset:3px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 #lf-dp .el-fat-outra .dp-i{width:14px;height:14px}
-#lf-dp .el-go{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:22px;padding-top:18px;border-top:1px solid var(--border-secondary)}
+#lf-dp .el-go{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:22px;padding:20px 0 8px;border-top:1px solid var(--border-secondary);text-align:center}
+#lf-dp .el-go-b{min-width:260px;justify-content:center}
+#lf-dp .dp-card+.el-vazio,#lf-dp .el-vazio{margin-top:24px}
 #lf-dp .el-go-b{display:inline-flex;align-items:center;gap:8px;padding:13px 22px;font-size:15px}
 #lf-dp .el-go-b .dp-i{width:16px;height:16px}
 #lf-dp .el-go-n{font-size:13px;line-height:19px;color:var(--text-quaternary)}
@@ -82,8 +84,7 @@
 #lf-dp .el-vazio .dp-i{width:28px;height:28px;color:var(--text-quaternary)}
 #lf-dp .el-vazio b{color:var(--text-primary)}
 @media (max-width:1000px){
-  #lf-dp .el-go{flex-direction:column;align-items:stretch;text-align:center}
-  #lf-dp .el-go-b{justify-content:center}
+  #lf-dp .el-go-b{width:100%}
   #lf-dp .dp-c-main{grid-template-columns:1fr}
   #lf-dp .dp-prod{max-width:none}
   #lf-dp .el-caso,#lf-dp .el-rapido,#lf-dp .el-mais{margin-top:16px}

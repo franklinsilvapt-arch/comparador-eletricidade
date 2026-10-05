@@ -358,7 +358,7 @@
   function cabecalho() {
     var n = S.data ? S.data.ofertas.length : 0, c = S.data ? Object.keys(S.data.ofertas.reduce(function (m, o) { m[o.c] = 1; return m; }, {})).length : 0;
     return '<div class="max-width-37-5 dp-lead"><div class="text-color-secondary"><div class="text-size-large"><div class="text-align-center">' +
-      'Indica o teu consumo e vê quanto pagas por mês em ' + (n ? n + ' ofertas de ' + c + ' comercializadores' : 'cada comercializador') + '. Os preços são os que as empresas comunicam à ERSE, o regulador da energia. Quando a ERSE ainda não publicou uma oferta em vigor, usamos o preço do site da empresa. Tudo é atualizado todos os dias.' +
+      'Indica o teu consumo e vê quanto pagas por mês em ' + (n ? n + ' ofertas de ' + c + ' comercializadores' : 'cada comercializador') + '. Preços comunicados à ERSE, o regulador da energia, ou lidos no site da empresa quando a ERSE ainda não tem a oferta. Atualizados todos os dias.' +
       '</div></div></div></div>' +
       '<div class="dp-meta"><div class="dp-authors">' +
       '<a class="dp-author" href="https://www.literaciafinanceira.pt/autores/franklin-silva"><img class="dp-author-img" src="https://cdn.prod.website-files.com/67922c46c9da6bf5d9bfdf20/683ee0ae5bc67fe0ef48466e_franklin-silva.avif" alt="Franklin Silva"><span><span class="dp-author-l">Autor</span><span class="dp-author-n">Franklin Silva</span></span></a>' +
