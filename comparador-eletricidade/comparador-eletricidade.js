@@ -33,7 +33,7 @@
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261005l';
+  var VERSAO = '20261005m';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -84,7 +84,7 @@
   var S = {
     data: null, erro: false,
     unid: 'eur', valor: 45, kwhIn: null, eurIn: 45, eurTocado: false, kwhMes: 0, pot: 2, tarifa: 'auto', vazio: 40, ponta: 20, fam: false, social: false, idx: true, mais: false, ciclo: 'd', omie: null,
-    on: {}, novo: true, open: null, visible: 10, formOpen: false, perfil: null,
+    on: {}, novo: true, open: null, visible: 10, formOpen: true, perfil: null,
     ver: 'melhor', com: '', sort: 'total', meuCom: '', meuId: '', fat: null, meuFat: null, calculado: false
   };
   /* F = o que esta no formulario; S = o que foi comparado (so muda ao carregar em "Comparar ofertas") */
@@ -97,7 +97,7 @@
     if (!temConsumo(F)) { S.erroForm = 'Indica o consumo em kWh ou quanto pagas por mês.'; render(); refocus('elKwh'); return; }
     S.erroForm = '';
     CAMPOS.forEach(function (k) { S[k] = F[k]; });
-    S.calculado = true; S.visible = 10; S.open = null;
+    S.calculado = true; S.visible = 10; S.open = null; S.formOpen = false; /* em mobile o cartao fecha para os resultados ficarem a vista */
     render();
     var alvo = document.querySelector('#lf-dp .dp-bar'); if (alvo && alvo.scrollIntoView) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -723,7 +723,7 @@
     var q = {};
     String(location.search || '').replace(/^\?/, '').split('&').forEach(function (kv) { var p = kv.split('='); if (p[0]) q[decodeURIComponent(p[0])] = decodeURIComponent((p[1] || '').replace(/\+/g, ' ')); });
     if (!q.sim) return false;
-    S.calculado = true;
+    S.calculado = true; S.formOpen = false;
     var v = parseFloat(String(q.val || '').replace(',', '.'));
     if (v > 0 && v < 100000) { if (q.un === 'eur') { S.eurIn = v; S.eurTocado = true; } else S.kwhIn = v; }
     var vk = parseFloat(String(q.kwh || '').replace(',', '.')); if (vk > 0 && vk < 100000) S.kwhIn = vk;
@@ -792,7 +792,7 @@
         d.ofertas.forEach(expandir); S.data = d;
         if (S.meuId) { var mine = null; d.ofertas.forEach(function (o) { if (o.id === S.meuId) mine = o; }); if (mine) S.meuCom = mine.c; else S.meuId = ''; F.meuCom = S.meuCom; F.meuId = S.meuId; }
         atualizarConsumo(); S.kwhMes = F.kwhMes; S.unid = F.unid; S.valor = F.valor;
-        if (S.calculado && !temConsumo(S)) S.calculado = false;
+        if (S.calculado && !temConsumo(S)) { S.calculado = false; S.formOpen = true; }
       } catch (err) { S.erro = true; }
       render();
     };
