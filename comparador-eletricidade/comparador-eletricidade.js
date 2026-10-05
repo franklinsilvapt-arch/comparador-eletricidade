@@ -33,7 +33,7 @@
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261005j';
+  var VERSAO = '20261005k';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -488,7 +488,7 @@
       '</div>' +
       '<p class="el-ajuda">' + (F.kwhIn > 0 && F.eurIn > 0 && F.eurTocado ? 'A poupança é calculada face aos <b>' + eurInt(F.eurIn) + '</b> que pagas hoje.' : F.kwhIn > 0 && F.eurIn > 0 ? 'Os ' + eurInt(F.eurIn) + ' são um exemplo: põe o que pagas para veres a poupança face à tua fatura.' : F.eurIn > 0 ? (F.eurTocado ? 'Com ' + eurInt(F.eurIn) + ' estimamos cerca de <b>' + milhar(String(Math.round(F.kwhMes))) + ' kWh</b> por mês aos preços do regulado. Se souberes o consumo em kWh, põe-no ao lado.' : 'Valor de exemplo (cerca de <b>' + milhar(String(Math.round(F.kwhMes))) + ' kWh</b> por mês). Põe o que pagas, ou o consumo em kWh se o souberes.') : F.kwhIn > 0 ? (F.meuId ? 'A poupança é calculada face ao teu tarifário atual.' : 'Põe também quanto pagas para veres a poupança face à tua fatura.') : 'Basta um dos dois. Os dois estão na fatura.') + '</p>' +
       '<div class="el-via-g"><label class="dp-label" for="elPot">Potência contratada</label><select class="dp-input dp-input-select" id="elPot">' + potOpts + '</select></div>' +
-      '<div class="el-via-g"><span class="dp-label">Não sabes o consumo? Usa os valores típicos de uma casa como a tua</span><div class="el-perfis">' + perfis + '</div>' +
+      '<div class="el-via-g"><span class="dp-label">Não sabes quanto gastas? Escolhe uma casa parecida com a tua e preenchemos o consumo e a potência</span><div class="el-perfis">' + perfis + '</div>' +
       '</div>' +
       '</section>' +
       '<div class="el-ou" aria-hidden="true"><span>ou</span></div>' +
