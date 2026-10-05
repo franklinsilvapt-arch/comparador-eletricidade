@@ -33,7 +33,7 @@
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261005k';
+  var VERSAO = '20261005l';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -631,7 +631,7 @@
     if (window.LF_FATURA) return Promise.resolve(window.LF_FATURA);
     if (fatLib) return fatLib;
     fatLib = new Promise(function (ok, ko) {
-      var sc = document.createElement('script'); sc.src = FATURA_URL + '?v=' + encodeURIComponent(S.data && S.data.atualizado || '1'); sc.async = true;
+      var sc = document.createElement('script'); sc.src = FATURA_URL + '?v=' + VERSAO; sc.async = true;
       sc.onload = function () { ok(window.LF_FATURA); }; sc.onerror = function () { fatLib = null; ko(new Error('Não foi possível carregar o leitor de faturas.')); };
       document.head.appendChild(sc);
     });

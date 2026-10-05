@@ -12,7 +12,7 @@
     ['EDPC', /EDP Comercial|503504564|edp\.pt/gi],
     ['TUR', /SU Eletricidade|Servi[çc]o Universal|EDP Servi[çc]o Universal|507846044/gi],
     ['END', /Endesa|980245974/gi],
-    ['G9', /G9 Energy|519326857|g9energy/gi],
+    ['G9', /G9 Energy|519326857|g9energy|\bG9\b/g],
     ['GALP', /Galp Power|Galp Comercializa|galp\.(?:pt|com)|509148247/gi],
     ['IBD', /Iberdrola/gi],
     ['GOLD', /Gold ?[Ee]nergy/gi],
@@ -140,9 +140,11 @@
     linhas.forEach(function (l, i) {
       if (/kVA/i.test(l) && /\bpot[êe]ncia\b/i.test(l) || (/\d\s*dias\b/i.test(l) && /\bpot[êe]ncia\b/i.test(linhas[i - 1] || ''))) {
         var d = /(\d{1,3})\s*dias/i.exec(l); if (d) dPot.push(+d[1]);
-        var ds = datasEm(l), n = diasEntre(ds); if (n) { dPot.push(n); if (!periodo) periodo = ds; }
+        var ds = datasEm(l), n = diasEntre(ds);
+        if (n) { dPot.push(n); periodo = periodo ? [ds[0] < periodo[0] ? ds[0] : periodo[0], ds[1] > periodo[1] ? ds[1] : periodo[1]] : ds; }
       }
     });
+    if (!r.dias && periodo) r.dias = diasEntre(periodo);
     if (!r.dias && dPot.length) r.dias = Math.max.apply(null, dPot);
     if (!r.dias) {
       var dAll = [];
@@ -203,9 +205,9 @@
     /* Precos: energia por kWh (sem IVA) e potencia por dia */
     var pe = [], pp = [];
     linhas.forEach(function (l, i) {
-      var k = /\d[\d.]*\s*kWh\s+(\d[,.]\d{3,6})\s*€?/i.exec(l);
+      var k = /\d[\d.]*\s*kWh\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l);
       if (k && !/redes|acesso|imposto|IEC|tarifa social|regula[çc]/i.test(l)) { var v = dec(k[1]); if (v > 0.03 && v < 0.6) pe.push(v); }
-      var d = /\d{1,3}\s*dias\s+(\d[,.]\d{3,6})\s*€?/i.exec(l);
+      var d = /\d{1,3}\s*dias\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l);
       if (d && /pot[êe]ncia/i.test(l + ' ' + (linhas[i - 1] || '')) && !/redes|acesso|audiovisual/i.test(l)) { var w = dec(d[1]); if (w > 0.03 && w < 6) pp.push(w); }
     });
     r.precoEnergia = pe.filter(function (v, i, a) { return a.indexOf(v) === i; });
@@ -215,8 +217,8 @@
     var rp = [], re_ = [];
     linhas.forEach(function (l) {
       if (!/acesso\s+[àa]s?\s+redes|redes\s+SEN|tarifa\s+de\s+acesso/i.test(l) || /audiovisual|imposto|inclui o valor/i.test(l)) return;
-      var d = /\d{1,3}\s*dias\s+(\d[,.]\d{3,6})\s*€?/i.exec(l); if (d) { var w = dec(d[1]); if (w > 0.01 && w < 3) rp.push(w); }
-      var k = /\d[\d.]*\s*kWh\s+(\d[,.]\d{3,6})\s*€?/i.exec(l); if (k) { var v = dec(k[1]); if (v > 0.005 && v < 0.3) re_.push(v); }
+      var d = /\d{1,3}\s*dias\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l); if (d) { var w = dec(d[1]); if (w > 0.01 && w < 3) rp.push(w); }
+      var k = /\d[\d.]*\s*kWh\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l); if (k) { var v = dec(k[1]); if (v > 0.005 && v < 0.3) re_.push(v); }
     });
     r.redesSeparadas = !!(rp.length || re_.length);
     if (rp.length && r.precoPotencia) r.precoPotencia = Math.round((r.precoPotencia + rp[rp.length - 1]) * 1e6) / 1e6;
@@ -234,7 +236,7 @@
     /* Nome do plano, quando a fatura o diz */
     m = /(?:Plano|Tarif[áa]rio|Oferta)\s*:\s*([^\n|]{2,40})/i.exec(T);
     r.plano = m ? m[1].trim() : null;
-    r.indexada = /indexad[ao]|OMIE|mercado\s+spot/i.test(flat);
+    r.indexada = /indexad[ao]\s+ao\s+pre[çc]o|tarifa\s+indexada|pre[çc]o\s+indexado|mercado\s+spot/i.test(flat);
 
     if (!r.pot) r.avisos.push('potência contratada');
     if (!r.kwhMes) r.avisos.push(r.kwh ? 'dias do período de faturação' : 'consumo em kWh');
