@@ -33,7 +33,7 @@
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261005c';
+  var VERSAO = '20261005f';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -85,7 +85,7 @@
     data: null, erro: false,
     unid: 'eur', valor: 37, kwhMes: 1900 / 12, pot: 2, tarifa: 'auto', vazio: 40, ponta: 20, fam: false, social: false, idx: true, mais: false, ciclo: 'd', omie: null,
     on: {}, novo: true, open: null, visible: 10, formOpen: false, perfil: null,
-    ver: 'melhor', com: '', sort: 'total', meuCom: '', meuId: '', fat: null, calculado: false
+    ver: 'melhor', com: '', sort: 'total', meuCom: '', meuId: '', fat: null, meuFat: null, calculado: false
   };
   /* F = o que esta no formulario; S = o que foi comparado (so muda ao carregar em "Comparar ofertas") */
   var CAMPOS = ['unid', 'valor', 'kwhMes', 'pot', 'tarifa', 'vazio', 'ponta', 'ciclo', 'fam', 'social', 'novo', 'perfil', 'meuCom', 'meuId'];
@@ -182,6 +182,13 @@
     return a || b || calcOpcao(o, i, c, 't');
   }
   function ctx() { return { kwh: S.kwhMes * 12, vz: S.vazio / 100, pt: S.ponta / 100, novo: S.novo, fam: S.fam, social: S.social, omie: S.omie, ciclo: S.ciclo }; }
+  /* Oferta pelo id, incluindo a oferta virtual 'FATURA' construida com os precos lidos da fatura */
+  function ofertaPorId(id) {
+    if (!id) return null;
+    if (id === 'FATURA') return S.meuFat;
+    for (var q = 0; q < S.data.ofertas.length; q++) if (S.data.ofertas[q].id === id) return S.data.ofertas[q];
+    return null;
+  }
   function regulada() { for (var i = 0; i < S.data.ofertas.length; i++) if (S.data.ofertas[i].c === 'TUR') return S.data.ofertas[i]; return null; }
   function faturaRegulada(kwhAno) {
     var t = regulada(), c = ctx(); c.kwh = kwhAno;
@@ -394,15 +401,13 @@
     var baseLabel = eurM ? 'Face à tua fatura' : 'Face ao regulado', baseTxt = eurM ? 'a tua fatura' : 'o mercado regulado';
     var meuF = null;
     if (F.meuId) {
-      var moF = null;
-      for (var qf = 0; qf < S.data.ofertas.length; qf++) if (S.data.ofertas[qf].id === F.meuId) { moF = S.data.ofertas[qf]; break; }
+      var moF = ofertaPorId(F.meuId);
       var mrF = moF ? calc(moF, F.pot, { kwh: F.kwhMes * 12, vz: F.vazio / 100, pt: F.ponta / 100, novo: F.novo, fam: F.fam, social: F.social, omie: S.omie, ciclo: F.ciclo }, F.tarifa) : null;
       if (mrF) meuF = { o: moF, r: mrF };
     }
     var meu = null;
     if (S.meuId) {
-      var mo = null;
-      for (var q = 0; q < S.data.ofertas.length; q++) if (S.data.ofertas[q].id === S.meuId) { mo = S.data.ofertas[q]; break; }
+      var mo = ofertaPorId(S.meuId);
       var mr = mo ? calc(mo, S.pot, ctx(), S.tarifa) : null;
       if (mr) { meu = { o: mo, r: mr }; base = mr.total; baseLabel = 'Face ao teu tarifário'; baseTxt = 'o teu tarifário atual'; }
     }
@@ -446,7 +451,7 @@
 
     var todosComs = Object.keys(S.data.ofertas.reduce(function (m, o) { m[o.c] = 1; return m; }, {})).sort(function (a, b) { return nomeDe(a).localeCompare(nomeDe(b), 'pt'); });
     var meuComOpts = op('', F.meuCom, 'Não comparar com o meu tarifário') + todosComs.map(function (k) { return op(k, F.meuCom, esc(nomeDe(k))); }).join('');
-    var meuOfOpts = op('', F.meuId, F.meuCom ? 'Escolhe o tarifário' : 'Primeiro o comercializador') + (F.meuCom ? S.data.ofertas.filter(function (o) { return o.c === F.meuCom && (o.s && o.s[F.pot] || o.b && o.b[F.pot] || o.t && o.t[F.pot]); })
+    var meuOfOpts = op('', F.meuId, F.meuCom ? 'Escolhe o tarifário' : 'Primeiro o comercializador') + (S.meuFat && (!F.meuCom || F.meuCom === S.meuFat.c) ? op('FATURA', F.meuId, 'Preços da minha fatura') : '') + (F.meuCom ? S.data.ofertas.filter(function (o) { return o.c === F.meuCom && (o.s && o.s[F.pot] || o.b && o.b[F.pot] || o.t && o.t[F.pot]); })
       .map(function (o) { return op(o.id, F.meuId, esc(o.n) + (o.f.charAt(3) === '1' ? ' (indexada)' : '')); }).join('') : '');
     var comOpts = op('', S.com, 'Todos os comercializadores') + res.coms.slice().sort(function (a, b) { return nomeDe(a).localeCompare(nomeDe(b), 'pt'); })
       .map(function (k) { return op(k, S.com, esc(nomeDe(k))); }).join('');
@@ -481,7 +486,7 @@
       '</section></div>' +
       '<div class="el-rapido el-meu"><label class="dp-label" for="elMeuCom">Já tens contrato? Compara com o teu tarifário atual</label><div class="el-duo">' +
       '<select class="dp-input dp-input-select" id="elMeuCom" aria-label="O teu comercializador">' + meuComOpts + '</select>' +
-      '<select class="dp-input dp-input-select" id="elMeuOf" aria-label="O teu tarifário"' + (F.meuCom ? '' : ' disabled') + '>' + meuOfOpts + '</select></div>' +
+      '<select class="dp-input dp-input-select" id="elMeuOf" aria-label="O teu tarifário"' + (F.meuCom || S.meuFat ? '' : ' disabled') + '>' + meuOfOpts + '</select></div>' +
       '<p class="el-ajuda">' + (meuF ? 'Com o teu consumo, o <b>' + esc(nomeDe(meuF.o.c)) + ' · ' + esc(meuF.o.n) + '</b> custa <b>' + eur(meuF.r.mes) + ' por mês</b> (' + eurInt(meuF.r.total) + ' por ano). As poupanças são face a este valor.' : 'O nome do tarifário está na fatura. Se não o encontrares, a comparação é feita com o valor da fatura que puseste em cima.') + '</p></div>' +
       '<button type="button" class="el-mais' + (S.mais ? ' is-open' : '') + '" data-mais aria-expanded="' + (S.mais ? 'true' : 'false') + '">Mais opções: tarifa, consumo em vazio, tarifa social' + CARET + '</button>' +
       (S.mais ? '<div class="el-avancado"><div class="el-av-g">' +
@@ -662,6 +667,21 @@
       });
       if (achado.length === 1) { F.meuId = achado[0].id; f.meu = achado[0]; }
     }
+    /* Sem tarifario reconhecido, os precos da propria fatura servem de base: oferta virtual 'FATURA' */
+    S.meuFat = null;
+    if (!f.meu && !r.indexada && r.precoPotencia && r.precoEnergia.length) {
+      var kk = r.tarifa || 's', pe = r.precoEnergia.slice(), linha = null;
+      if (kk === 's') linha = [r.precoPotencia, pe[pe.length - 1]];
+      else if (kk === 'b' && pe.length >= 2) { pe.sort(function (a, b) { return b - a; }); linha = [r.precoPotencia, pe[0], pe[pe.length - 1]]; }
+      else if (kk === 't' && pe.length >= 3) { pe.sort(function (a, b) { return b - a; }); linha = [r.precoPotencia, pe[0], pe[1], pe[pe.length - 1]]; }
+      if (linha && r.descontoPct) linha = linha.map(function (v) { return Math.round(v * (1 - r.descontoPct / 100) * 1e6) / 1e6; });
+      if (linha) {
+        var arr = POTS.map(function () { return 0; }); arr[F.pot] = linha;
+        var virt = { id: 'FATURA', c: r.com || '', n: 'O teu tarifário (preços da fatura)', f: '00000000', pg: '', ft: '', ct: '', at: '1111', src: 'fatura' };
+        virt[kk] = arr;
+        S.meuFat = virt; F.meuId = 'FATURA'; f.virt = linha;
+      }
+    }
     S.fat = f; S.mais = S.mais || temRep || (r.tarifa && r.tarifa !== 's');
     comparar();
   }
@@ -687,6 +707,7 @@
     var com = r.com ? nomeDe(r.com) : null;
     var h = '<p class="el-fat-ok">' + ico(IC.doc) + (com ? 'Lemos a tua fatura da <b>' + esc(com) + '</b>' : 'Lemos a tua fatura') + (partes.length ? ': ' + partes.join(', ') + '.' : '.') + ' Os campos ao lado já estão preenchidos.</p>';
     if (f.meu) h += '<p>O teu tarifário é o <b>' + esc(f.meu.n) + '</b>: as poupanças abaixo são face a ele.</p>';
+    else if (f.virt) h += '<p>Este tarifário já não está nas ofertas de hoje, por isso usamos os <b>preços da tua fatura</b> (' + num(f.virt[1], 4) + '€ por kWh' + (f.virt.length > 2 ? ' no fora de vazio' : '') + ' e ' + num(f.virt[0], 4) + '€ por dia de potência, sem IVA' + (r.redesSeparadas ? ', com o acesso às redes somado' : '') + (r.descontoPct ? ', já com o desconto de ' + num(r.descontoPct, 0) + '% da fatura' : '') + ') para calcular o que pagas hoje. As poupanças abaixo são face a esse valor.</p>';
     else if (r.indexada) h += '<p>Tens um tarifário indexado, com preço que muda todos os meses, por isso não dá para o reconhecer pelos preços. As poupanças abaixo são face ao mercado regulado. Para comparar com o que pagaste, põe ao lado o valor da fatura em euros.</p>';
     else if (F.meuCom) h += '<p>Não reconhecemos o tarifário pelos preços' + (r.plano ? ' (na fatura chama-se "' + esc(r.plano) + '")' : '') + '. Se o encontrares na lista do teu comercializador em baixo, escolhe-o para a poupança ser face ao que pagas hoje.</p>';
     else if (com) h += '<p>A ' + esc(com) + ' não tem ofertas no comparador neste momento, por isso a comparação é feita com o mercado regulado.</p>';
@@ -723,7 +744,7 @@
     if (S.vazio !== 40) p.push('vz=' + S.vazio);
     if (S.ponta !== 20) p.push('pt=' + S.ponta);
     if (S.ciclo !== 'd') p.push('ci=' + S.ciclo);
-    if (S.meuId) p.push('meu=' + encodeURIComponent(S.meuId));
+    if (S.meuId && S.meuId !== 'FATURA') p.push('meu=' + encodeURIComponent(S.meuId));
     if (S.com) p.push('com=' + encodeURIComponent(S.com));
     if (S.ver === 'todas') p.push('ver=todas');
     if (S.sort !== 'total') p.push('ord=' + S.sort);

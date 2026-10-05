@@ -210,6 +210,26 @@
     });
     r.precoEnergia = pe.filter(function (v, i, a) { return a.indexOf(v) === i; });
     r.precoPotencia = pp.length ? pp[pp.length - 1] : null;
+    /* Alguns comercializadores (ex.: Endesa) faturam o acesso as redes em linhas separadas. Os precos da ERSE incluem-no,
+       por isso soma-se o termo fixo (por dia) a potencia e o termo variavel (por kWh) a energia. Fica o valor mais recente. */
+    var rp = [], re_ = [];
+    linhas.forEach(function (l) {
+      if (!/acesso\s+[àa]s?\s+redes|redes\s+SEN|tarifa\s+de\s+acesso/i.test(l) || /audiovisual|imposto|inclui o valor/i.test(l)) return;
+      var d = /\d{1,3}\s*dias\s+(\d[,.]\d{3,6})\s*€?/i.exec(l); if (d) { var w = dec(d[1]); if (w > 0.01 && w < 3) rp.push(w); }
+      var k = /\d[\d.]*\s*kWh\s+(\d[,.]\d{3,6})\s*€?/i.exec(l); if (k) { var v = dec(k[1]); if (v > 0.005 && v < 0.3) re_.push(v); }
+    });
+    r.redesSeparadas = !!(rp.length || re_.length);
+    if (rp.length && r.precoPotencia) r.precoPotencia = Math.round((r.precoPotencia + rp[rp.length - 1]) * 1e6) / 1e6;
+    if (re_.length) r.precoEnergia = r.precoEnergia.map(function (v) { return Math.round((v + re_[re_.length - 1]) * 1e6) / 1e6; });
+
+    /* Descontos percentuais aplicados sobre os precos (ex.: Endesa "Desconto Debito Direto (11,27 € x 7,00%) + Desconto Fatura Digital (... x 7,00%)") */
+    r.descontoPct = 0;
+    linhas.forEach(function (l) {
+      if (!/desconto/i.test(l)) return;
+      var soma = 0, n = 0, mm, rx = /x\s*(\d+[,.]\d+)\s*%/g;
+      while ((mm = rx.exec(l))) { soma += dec(mm[1]); n++; }
+      if (n && soma > 0 && soma < 50 && soma > r.descontoPct) r.descontoPct = Math.round(soma * 100) / 100;
+    });
 
     /* Nome do plano, quando a fatura o diz */
     m = /(?:Plano|Tarif[áa]rio|Oferta)\s*:\s*([^\n|]{2,40})/i.exec(T);
