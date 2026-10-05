@@ -18,7 +18,9 @@ Ficheiro "Ofertas comerciais (CSV)" do [simulador de preços da ERSE](https://si
 
 Segue a metodologia do simulador da ERSE, validada ao cêntimo nos consumidores-tipo (tarifa regulada bi-horária, 3,45 kVA e 1.900 kWh por ano: 441,79€; 6,9 kVA e 5.000 kWh: 1.140,32€).
 
-Parâmetros a rever no topo do `comparador-eletricidade.js` quando mudarem: termo fixo das tarifas de acesso (`TAR_POT`), imposto especial de consumo (`IEC`), contribuição audiovisual (`CAV`) e limites de IVA a 6% (`KWH_IVA6`).
+Ao total da ERSE junta-se a taxa de exploração da DGEG (0,07€ por mês mais IVA a 23%, cerca de 1,03€ por ano), que o simulador da ERSE não conta mas vem em todas as faturas. Por isso o nosso total fica 1,03€ por ano acima do da ERSE em todas as ofertas (a ordem do ranking não muda).
+
+Parâmetros a rever no topo do `comparador-eletricidade.js` quando mudarem: termo fixo das tarifas de acesso (`TAR_POT`), imposto especial de consumo (`IEC`), contribuição audiovisual (`CAV`), taxa da DGEG (`DGEG`) e limites de IVA a 6% (`KWH_IVA6`).
 
 ## Novo comercializador
 

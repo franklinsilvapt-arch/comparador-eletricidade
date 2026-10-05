@@ -1,6 +1,6 @@
 /* Comparador de eletricidade - literaciafinanceira.pt
    Dados: ofertas comerciais comunicadas a ERSE (data/ofertas.json, gerado todos os dias por scripts/atualizar_ofertas.py).
-   Calculo da fatura: mesma metodologia do simulador de precos da ERSE (validado ao centimo nos consumidores-tipo).
+   Calculo da fatura: mesma metodologia do simulador de precos da ERSE (validado ao centimo nos consumidores-tipo), mais a taxa de exploracao da DGEG.
    Reutiliza o CSS do comparador de depositos (#lf-dp .dp-*) mais o suplemento comparador-eletricidade.css. */
 (function () {
   'use strict';
@@ -24,6 +24,8 @@
   var TS_POT = [0.0361, 0.0722, 0.1083, 0.1444, 0.1806, 0.2166];
   var TS_KWH = 0.0468, CAV_TS = 1, IEC_TS = 0;
   var CAV_MIN_KWH = 400;      /* abaixo deste consumo anual nao se paga contribuicao audiovisual */
+  /* Taxa de exploracao da DGEG, EUR/mes com IVA a 23%. O simulador da ERSE nao a conta, mas vem em todas as faturas. */
+  var DGEG = 0.07;
   /* Estes valores sao so a reserva: o ofertas.json traz os parametros calibrados todos os dias com o simulador da ERSE. */
   function aplicarParams(P) {
     if (!P) return;
@@ -126,14 +128,14 @@
     else { var pt = Math.min(c.pt, 1 - c.vz); en = p[1] * kwh * pt + p[2] * kwh * (1 - c.vz - pt) + p[3] * kwh * c.vz; }
     var tf = p[0] * 365, tar = tarDia * 365;
     var tfIva = pot <= 3.45 ? tar * 1.06 + (tf - tar) * 1.23 : tf * 1.23;
-    var enIva = en * ivaE, iec = kwh * iecKwh * 1.23, cav = cavMes * 12 * 1.06;
+    var enIva = en * ivaE, iec = kwh * iecKwh * 1.23, cav = cavMes * 12 * 1.06, dgeg = DGEG * 12 * 1.23;
     function desc(a) { return a ? a[0] + a[1] * tf * 1.23 + (a[2] * en + a[3] * kwh) * ivaE : 0; }
     var reemb = desc(o.r), dNovo = c.novo ? desc(o.d) : 0, serv = o.cs || 0;
-    var total = enIva + tfIva + iec + cav + serv - reemb - dNovo;
+    var total = enIva + tfIva + iec + cav + dgeg + serv - reemb - dNovo;
     return {
       k: k, total: total, mes: total / 12, p: p,
-      energia: en, potencia: tf, iva: (enIva - en) + (tfIva - tf) + kwh * iecKwh * 0.23 + cavMes * 12 * 0.06,
-      iec: kwh * iecKwh, cav: cavMes * 12, serv: serv, reemb: reemb, dNovo: dNovo,
+      energia: en, potencia: tf, iva: (enIva - en) + (tfIva - tf) + kwh * iecKwh * 0.23 + cavMes * 12 * 0.06 + DGEG * 12 * 0.23,
+      iec: kwh * iecKwh, cav: cavMes * 12, dgeg: DGEG * 12, serv: serv, reemb: reemb, dNovo: dNovo,
       precoMedio: kwh > 0 ? en / kwh : 0
     };
   }
@@ -260,6 +262,7 @@
       '<tr><td>Potência contratada (' + potTxt(POTS[S.pot]) + ')</td><td class="num">' + eur(r.potencia) + '</td></tr>' +
       '<tr><td>Imposto especial de consumo' + (S.social ? ' (isento)' : '') + '</td><td class="num">' + eur(r.iec) + '</td></tr>' +
       '<tr><td>Contribuição audiovisual' + (S.social ? ' (reduzida)' : '') + '</td><td class="num">' + eur(r.cav) + '</td></tr>' +
+      '<tr><td>Taxa de exploração da DGEG</td><td class="num">' + eur(r.dgeg) + '</td></tr>' +
       '<tr><td>IVA</td><td class="num">' + eur(r.iva) + '</td></tr>' +
       (r.serv ? '<tr><td>Serviços adicionais obrigatórios</td><td class="num">' + eur(r.serv) + '</td></tr>' : '') +
       (r.reemb ? '<tr><td>Descontos e reembolsos</td><td class="num">-' + eur(r.reemb) + '</td></tr>' : '') +
@@ -410,7 +413,7 @@
       (lst.length ? '<div class="dp-cards">' + cards + '</div>' : '<div class="dp-empty">' + (S.social && S.pot >= TS_POT.length ? 'A tarifa social só existe para potências contratadas até 6,9 kVA.' : 'Nenhuma oferta cumpre estes filtros para ' + potTxt(POTS[S.pot]) + '. Tira um filtro ou muda a tarifa.') + '</div>') +
       (lst.length > vis.length ? '<div class="dp-more"><button type="button" class="dp-btn is-secondary" id="elMore">Mostrar mais ' + Math.min(10, lst.length - vis.length) + ' de ' + (lst.length - vis.length) + '</button></div>' : '') +
       '<p class="dp-foot">Preços de todas as ofertas de eletricidade para clientes domésticos comunicadas pelos comercializadores à <a href="https://simuladorprecos.erse.pt/" target="_blank" rel="noopener">ERSE</a>, atualizados a ' + dataPT(S.data.atualizado) + ', para Portugal continental. Ficam de fora os pacotes de eletricidade com gás. ' +
-      'A fatura inclui energia, potência, IVA, imposto especial de consumo e contribuição audiovisual, segue a metodologia do simulador de preços da ERSE e não inclui a taxa de exploração da DGEG (0,07€ por mês). ' +
+      'A fatura inclui energia, potência, IVA, imposto especial de consumo, contribuição audiovisual e taxa de exploração da DGEG (0,07€ por mês mais IVA). Segue a metodologia do simulador de preços da ERSE, que não conta esta taxa. Quando uma oferta chega ao fim e o comercializador ainda não comunicou a renovação à ERSE, a oferta deixa de aparecer aqui e no simulador da ERSE até a nova versão ser publicada. ' +
       'As tarifas indexadas ficam de fora por omissão, porque o preço muda todos os meses com o mercado grossista e o valor mostrado é só uma estimativa da ERSE. ' +
       'Com a opção "Tenho tarifa social", os preços levam o <a href="https://www.erse.pt/media/02gh5y04/tarifa-social-eletricidade-jan2026.pdf" target="_blank" rel="noopener">desconto fixado pela ERSE para 2026</a> (33,8% sobre a tarifa regulada), a isenção do imposto especial de consumo e a contribuição audiovisual reduzida. Os descontos de novo cliente valem só no primeiro ano. Confirma sempre as condições no site do comercializador antes de mudares.</p>';
   }
