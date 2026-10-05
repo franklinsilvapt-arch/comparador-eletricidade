@@ -33,7 +33,7 @@
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261005m';
+  var VERSAO = '20261005n';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -282,8 +282,8 @@
     var dif = base != null ? base - r.total : null, poup;
     if (o.c === 'TUR' && !(S.eurIn > 0 && S.eurTocado) && !S.meuId) poup = '<div class="dp-kpi-v is-plain" style="color:#697386">–</div><div class="dp-kpi-s">é a referência</div>';
     else if (dif == null) poup = '<div class="dp-kpi-v is-plain" style="color:#697386">–</div><div class="dp-kpi-s">&nbsp;</div>';
-    else if (dif >= 0.5) poup = '<div class="dp-kpi-v el-pos">' + eurInt(dif) + '</div><div class="dp-kpi-s">a menos por ano</div>';
-    else if (dif <= -0.5) poup = '<div class="dp-kpi-v is-plain el-neg">+' + eurInt(-dif) + '</div><div class="dp-kpi-s">a mais por ano</div>';
+    else if (dif >= 0.5) poup = '<div class="dp-kpi-v el-pos">' + eur(dif / 12) + '</div><div class="dp-kpi-s">a menos por mês · ' + eurInt(dif) + ' por ano</div>';
+    else if (dif <= -0.5) poup = '<div class="dp-kpi-v is-plain el-neg">+' + eur(-dif / 12) + '</div><div class="dp-kpi-s">a mais por mês · ' + eurInt(-dif) + ' por ano</div>';
     else poup = '<div class="dp-kpi-v is-plain">Igual</div><div class="dp-kpi-s">&nbsp;</div>';
 
     var ek = energiaKpi(r), link = url(o.u);
@@ -457,7 +457,7 @@
     if (res.melhor) {
       var m = res.melhor, dm = base != null ? base - m.r.total : 0;
       mk = '<div class="dp-mk"><b>' + res.nOfertas + '</b> ofertas de <b>' + res.coms.length + '</b> comercializadores' + (S.idx ? '' : ', só de preço fixo') + '<span class="dp-mk-sep">·</span>A mais barata: <b>' + esc(nomeDe(m.o.c)) + '</b>, ' + eur(m.r.mes) + ' por mês' +
-        (dm >= 0.5 ? '<span class="dp-mk-sep">·</span><b>' + eurInt(dm) + '</b> a menos por ano do que ' + baseTxt : '') + (meu ? '<span class="dp-mk-sep">·</span>O teu tarifário: ' + eur(meu.r.mes) + ' por mês' : '') + (S.social ? '<span class="dp-mk-sep">·</span>Com tarifa social' : '') + '</div>';
+        (dm >= 0.5 ? '<span class="dp-mk-sep">·</span><b>' + eur(dm / 12) + '</b> a menos por mês do que ' + baseTxt + ' (' + eurInt(dm) + ' por ano)' : '') + (meu ? '<span class="dp-mk-sep">·</span>O teu tarifário: ' + eur(meu.r.mes) + ' por mês' : '') + (S.social ? '<span class="dp-mk-sep">·</span>Com tarifa social' : '') + '</div>';
     }
 
     var todosComs = Object.keys(S.data.ofertas.reduce(function (m, o) { m[o.c] = 1; return m; }, {})).sort(function (a, b) { return nomeDe(a).localeCompare(nomeDe(b), 'pt'); });
@@ -702,16 +702,21 @@
     var f = S.fat;
     if (!f || f.aLer) return '';
     if (f.erro) return '<div class="el-fat-res is-erro"><p>' + esc(f.erro) + '</p><button type="button" class="el-fat-x" data-fat-fechar aria-label="Fechar">×</button></div>';
-    var r = f.r, partes = [];
-    if (r.kwh && r.dias) partes.push('<b>' + r.kwh + ' kWh</b> em ' + r.dias + ' dias, ou seja, cerca de <b>' + r.kwhMes + ' kWh por mês</b>');
-    else if (r.kwh) partes.push('<b>' + r.kwh + ' kWh</b> no período');
-    if (r.pot) partes.push('<b>' + potTxt(POTS[F.pot]) + '</b>');
-    if (r.tarifa) partes.push('tarifa <b>' + TARIFAS[r.tarifa].toLowerCase() + '</b>' + (r.ciclo ? ' em ciclo ' + (r.ciclo === 's' ? 'semanal' : 'diário') : ''));
-    if (r.vazioPct != null) partes.push('<b>' + r.vazioPct + '%</b> do consumo em vazio' + (r.pontaPct != null ? ' e <b>' + r.pontaPct + '%</b> em ponta' : ''));
-    var com = r.com ? nomeDe(r.com) : null;
-    var h = '<p class="el-fat-ok">' + ico(IC.doc) + (com ? 'Lemos a tua fatura da <b>' + esc(com) + '</b>' : 'Lemos a tua fatura') + (partes.length ? ': ' + partes.join(', ') + '.' : '.') + '</p>';
-    if (f.meu) h += '<p>O teu tarifário é o <b>' + esc(f.meu.n) + '</b>: as poupanças abaixo são face a ele.</p>';
-    else if (f.virt) h += '<p>Este tarifário já não está nas ofertas de hoje: a poupança é face aos <b>preços da tua fatura</b> (' + num(f.virt[1], 4) + '€ por kWh' + (f.virt.length > 2 ? ' no fora de vazio' : '') + ' e ' + num(f.virt[0], 4) + '€ por dia de potência, sem IVA' + (r.redesSeparadas ? ', com o acesso às redes somado' : '') + (r.descontoPct ? ', já com o desconto de ' + num(r.descontoPct, 0) + '% da fatura' : '') + ').</p>';
+    var r = f.r, com = r.com ? nomeDe(r.com) : null;
+    var dataCurta = function (iso) { var M = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']; var q = String(iso || '').split('-'); return q.length === 3 ? parseInt(q[2], 10) + ' ' + M[parseInt(q[1], 10) - 1] : ''; };
+    var tile = function (l, v, sub) { return '<div class="el-ft"><div class="el-ft-l">' + l + '</div><div class="el-ft-v">' + v + '</div>' + (sub ? '<div class="el-ft-s">' + sub + '</div>' : '') + '</div>'; };
+    var tiles = '';
+    if (r.kwh) tiles += tile('Consumo', r.kwh + ' kWh', r.dias ? 'em ' + r.dias + ' dias · ' + r.kwhMes + ' kWh/mês' : 'no período');
+    if (r.pot) tiles += tile('Potência', potTxt(POTS[F.pot]), '');
+    if (r.tarifa) tiles += tile('Tarifa', TARIFAS[r.tarifa], r.ciclo ? 'ciclo ' + (r.ciclo === 's' ? 'semanal' : 'diário') : (r.vazioPct != null ? r.vazioPct + '% em vazio' + (r.pontaPct != null ? ', ' + r.pontaPct + '% em ponta' : '') : ''));
+    if (f.virt) tiles += tile('Energia', num(f.virt[1], 4) + '€', 'por kWh, sem IVA') + tile('Potência/dia', num(f.virt[0], 4) + '€', 'sem IVA');
+    else if (r.precoEnergia.length && r.precoPotencia) tiles += tile('Energia', num(r.precoEnergia[r.precoEnergia.length - 1], 4) + '€', 'por kWh, sem IVA') + tile('Potência/dia', num(r.precoPotencia, 4) + '€', 'sem IVA');
+    var h = '<div class="el-fat-h">' + (r.com ? logo(r.com, com) : '<span class="dp-logo el-logo"><span class="dp-logo-ini">' + ico(IC.doc) + '</span></span>') +
+      '<div class="el-fat-t"><div class="el-fat-n">' + (com ? esc(com) : 'Fatura') + (r.plano ? ' <span class="el-fat-p">' + esc(r.plano) + '</span>' : '') + '</div>' +
+      '<div class="el-fat-d">' + (r.de && r.ate ? dataCurta(r.de) + ' → ' + dataCurta(r.ate) : 'Fatura lida') + (r.indexada ? ' · tarifa indexada' : '') + '</div></div></div>' +
+      (tiles ? '<div class="el-fat-g">' + tiles + '</div>' : '');
+    if (f.meu) h += '<p>O teu tarifário é o <b>' + esc(f.meu.n) + '</b>: as poupanças são face a ele.</p>';
+    else if (f.virt) h += '<p>Este tarifário já não está nas ofertas de hoje: a poupança é face aos <b>preços da tua fatura</b>' + (r.redesSeparadas || r.descontoPct ? ' (' + [r.redesSeparadas ? 'acesso às redes somado' : '', r.descontoPct ? 'desconto de ' + num(r.descontoPct, 0) + '% incluído' : ''].filter(Boolean).join(', ') + ')' : '') + '.</p>';
     else if (r.indexada) h += '<p>Tens um tarifário indexado, com preço que muda todos os meses, por isso não dá para o reconhecer pelos preços. Para a poupança ser face ao que pagas, põe ao lado o valor da fatura em euros.</p>';
     else if (F.meuCom) h += '<p>Não reconhecemos o tarifário' + (r.plano ? ' "' + esc(r.plano) + '"' : '') + ' pelos preços. Escolhe-o em baixo, se o encontrares, para a poupança ser face ao que pagas.</p>';
     else if (com) h += '<p>A ' + esc(com) + ' não tem ofertas no comparador neste momento, por isso a poupança é face ao mercado regulado.</p>';

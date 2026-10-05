@@ -145,6 +145,7 @@
       }
     });
     if (!r.dias && periodo) r.dias = diasEntre(periodo);
+    if (periodo) { r.de = periodo[0].toISOString().slice(0, 10); r.ate = periodo[1].toISOString().slice(0, 10); }
     if (!r.dias && dPot.length) r.dias = Math.max.apply(null, dPot);
     if (!r.dias) {
       var dAll = [];
