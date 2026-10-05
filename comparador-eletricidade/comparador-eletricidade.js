@@ -435,18 +435,20 @@
 
     root.innerHTML = cabecalho() +
       '<div class="dp-card' + (S.formOpen ? ' is-open' : '') + '"><button type="button" class="dp-card-toggle" data-cardtoggle aria-expanded="' + (S.formOpen ? 'true' : 'false') + '"><span><span class="dp-card-toggle-t">Consumo, potência e tarifa</span><span class="dp-card-toggle-s">' + resumo + '</span></span>' + CARET + '</button>' +
-      '<div class="dp-card-body"><div class="el-simples">' +
+      '<div class="dp-card-body"><div class="el-vias">' +
+      '<section class="el-via el-via-mao"><div class="el-via-h"><span class="el-via-t">Preencher à mão</span><span class="el-via-s">Dois dados que estão em qualquer fatura.</span></div>' +
       '<div><label class="dp-label" for="elVal">Quanto gastas de luz por mês?</label><div class="dp-input-wrap el-val"><input id="elVal" class="dp-input" type="text" inputmode="decimal" autocomplete="off" value="' + (S.valor ? milhar(String(S.valor).replace('.', ',')) : '') + '">' +
       '<div class="el-unid" role="group" aria-label="Unidade"><button type="button" class="el-unid-b' + (S.unid === 'eur' ? ' is-on' : '') + '" data-unid="eur">€</button><button type="button" class="el-unid-b' + (S.unid === 'kwh' ? ' is-on' : '') + '" data-unid="kwh">kWh</button></div></div>' +
       '<p class="el-ajuda">' + (S.unid === 'eur' ? 'Põe o valor da fatura. Equivale a cerca de <b>' + milhar(String(Math.round(S.kwhMes))) + ' kWh</b> por mês aos preços do mercado regulado.' : 'O consumo em kWh está na tua fatura.') + '</p></div>' +
-      '<div><label class="dp-label" for="elPot">Potência contratada</label><select class="dp-input dp-input-select" id="elPot">' + potOpts + '</select>' +
+      '<div class="el-via-g"><label class="dp-label" for="elPot">Potência contratada</label><select class="dp-input dp-input-select" id="elPot">' + potOpts + '</select>' +
       '<p class="el-ajuda">Está na fatura. As mais comuns são 3,45 e 6,9 kVA.</p></div>' +
-      '</div>' +
-      '<div class="el-rapido el-fat"><span class="dp-label">Tens a fatura em PDF? Carrega-a e preenchemos tudo</span>' +
-      '<div class="el-fat-l"><button type="button" class="dp-irs-b el-fat-b" data-fatura' + (S.fat && S.fat.aLer ? ' disabled' : '') + '>' + ico(IC.doc) + (S.fat && S.fat.aLer ? 'A ler a fatura…' : 'Carregar fatura em PDF') + '</button>' +
-      '<input type="file" id="elFatura" accept="application/pdf,.pdf" class="el-fat-in" tabindex="-1" aria-hidden="true"></div>' +
-      '<p class="el-ajuda">A fatura é lida no teu browser e não é enviada para lado nenhum. Serve a fatura eletrónica (PDF) da área de cliente ou do email do comercializador.</p>' + resumoFatura() + '</div>' +
-      '<div class="el-rapido"><span class="dp-label">Não sabes? Escolhe o caso mais parecido</span><div class="el-perfis">' + perfis + '</div></div>' +
+      '<div class="el-via-g"><span class="dp-label">Não sabes? Escolhe o caso mais parecido</span><div class="el-perfis">' + perfis + '</div></div>' +
+      '</section>' +
+      '<div class="el-ou" aria-hidden="true"><span>ou</span></div>' +
+      '<section class="el-via el-via-pdf"><div class="el-via-h"><span class="el-via-t">Carregar a fatura em PDF</span><span class="el-via-s">Preenchemos tudo por ti: consumo, potência, tarifa e, se der, o teu tarifário.</span></div>' +
+      zonaFatura() +
+      '<input type="file" id="elFatura" accept="application/pdf,.pdf" class="el-fat-in" tabindex="-1" aria-hidden="true">' +
+      '</section></div>' +
       '<div class="el-rapido el-meu"><label class="dp-label" for="elMeuCom">Já tens contrato? Compara com o teu tarifário atual</label><div class="el-duo">' +
       '<select class="dp-input dp-input-select" id="elMeuCom" aria-label="O teu comercializador">' + meuComOpts + '</select>' +
       '<select class="dp-input dp-input-select" id="elMeuOf" aria-label="O teu tarifário"' + (S.meuCom ? '' : ' disabled') + '>' + meuOfOpts + '</select></div>' +
@@ -513,6 +515,18 @@
     var g = t.closest('[data-toggle]');
     if (g) { var id = g.closest('.dp-c').getAttribute('data-id'); S.open = S.open === id ? null : id; render(); }
   });
+  /* Arrastar e largar a fatura na zona do PDF */
+  function zona(e) { var t = e.target; return t && t.closest ? t.closest('#lf-dp .el-via-pdf') : null; }
+  document.addEventListener('dragover', function (e) { var z = zona(e); if (!z) return; e.preventDefault(); z.classList.add('is-drag'); });
+  document.addEventListener('dragleave', function (e) { var z = zona(e); if (z && !z.contains(e.relatedTarget)) z.classList.remove('is-drag'); });
+  document.addEventListener('drop', function (e) {
+    var z = zona(e); if (!z) return;
+    e.preventDefault(); z.classList.remove('is-drag');
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) lerFatura(f);
+  });
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('el-drop')) { e.preventDefault(); var fi = document.getElementById('elFatura'); if (fi) fi.click(); }
+  });
   document.addEventListener('input', function (e) {
     var id = e.target && e.target.id;
     if (id === 'elVal') {
@@ -539,7 +553,7 @@
     if (id === 'elMeuCom') { S.meuCom = v; S.meuId = ''; render(); }
     if (id === 'elMeuOf') { S.meuId = v; render(); }
     if (id === 'elSort') { S.sort = v; S.visible = 10; render(); }
-    if (id === 'elFatura' && e.target.files && e.target.files[0]) lerFatura(e.target.files[0]);
+    if (id === 'elFatura' && e.target.files && e.target.files[0]) { var ff = e.target.files[0]; e.target.value = ''; lerFatura(ff); }
   });
 
   /* Formato compacto do JSON (v3): s = [termosFixos, kWh], b = [termosFixos, foraVazio, vazio], t = [termosFixos, ponta, cheias, vazio].
@@ -615,7 +629,16 @@
     }
     S.fat = f; S.visible = 10; S.mais = S.mais || temRep || (r.tarifa && r.tarifa !== 's');
     render();
-    var el = document.querySelector('#lf-dp .el-fat-res'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    var el = document.querySelector('#lf-dp .el-via-pdf'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function zonaFatura() {
+    var f = S.fat;
+    if (f && f.aLer) return '<div class="el-drop is-busy"><div class="el-drop-i">' + ico(IC.doc) + '</div><p class="el-drop-t">A ler a fatura…</p></div>';
+    if (f && (f.erro || f.r)) return resumoFatura() + '<button type="button" class="el-fat-outra" data-fatura>' + ico(IC.doc) + 'Carregar outra fatura</button>';
+    return '<div class="el-drop" data-fatura role="button" tabindex="0" aria-label="Carregar a fatura em PDF"><div class="el-drop-i">' + ico(IC.doc) + '</div>' +
+      '<p class="el-drop-t">Arrasta a fatura para aqui ou <span class="el-drop-l">escolhe o ficheiro</span></p>' +
+      '<p class="el-drop-s">Fatura eletrónica em PDF, da área de cliente ou do email do comercializador.</p>' +
+      '<p class="el-drop-p">' + ico(IC.lock) + 'É lida no teu browser e não sai do teu computador.</p></div>';
   }
   function resumoFatura() {
     var f = S.fat;
@@ -628,13 +651,13 @@
     if (r.tarifa) partes.push('tarifa <b>' + TARIFAS[r.tarifa].toLowerCase() + '</b>' + (r.ciclo ? ' em ciclo ' + (r.ciclo === 's' ? 'semanal' : 'diário') : ''));
     if (r.vazioPct != null) partes.push('<b>' + r.vazioPct + '%</b> do consumo em vazio' + (r.pontaPct != null ? ' e <b>' + r.pontaPct + '%</b> em ponta' : ''));
     var com = r.com ? nomeDe(r.com) : null;
-    var h = '<p>' + (com ? 'Lemos a tua fatura da <b>' + esc(com) + '</b>' : 'Lemos a tua fatura') + (partes.length ? ': ' + partes.join(', ') + '.' : '.') + '</p>';
+    var h = '<p class="el-fat-ok">' + ico(IC.doc) + (com ? 'Lemos a tua fatura da <b>' + esc(com) + '</b>' : 'Lemos a tua fatura') + (partes.length ? ': ' + partes.join(', ') + '.' : '.') + ' Os campos ao lado já estão preenchidos.</p>';
     if (f.meu) h += '<p>O teu tarifário é o <b>' + esc(f.meu.n) + '</b>: as poupanças abaixo são face a ele.</p>';
-    else if (r.indexada) h += '<p>Tens um tarifário indexado, com preço que muda todos os meses, por isso não dá para o reconhecer pelos preços. As poupanças abaixo são face ao mercado regulado. Para comparar com o que pagaste, põe em cima o valor da fatura em euros.</p>';
+    else if (r.indexada) h += '<p>Tens um tarifário indexado, com preço que muda todos os meses, por isso não dá para o reconhecer pelos preços. As poupanças abaixo são face ao mercado regulado. Para comparar com o que pagaste, põe ao lado o valor da fatura em euros.</p>';
     else if (S.meuCom) h += '<p>Não reconhecemos o tarifário pelos preços' + (r.plano ? ' (na fatura chama-se "' + esc(r.plano) + '")' : '') + '. Se o encontrares na lista do teu comercializador em baixo, escolhe-o para a poupança ser face ao que pagas hoje.</p>';
     else if (com) h += '<p>A ' + esc(com) + ' não tem ofertas no comparador neste momento, por isso a comparação é feita com o mercado regulado.</p>';
     if (r.vazioPct != null && r.tarifa === 's') h += '<p>Como a fatura diz quanto gastas em cada período, comparamos a tarifa simples com a bi-horária para veres se compensava mudar.</p>';
-    if (f.faltas.length) h += '<p>Não encontrámos na fatura: <b>' + esc(f.faltas.join(', ')) + '</b>. Preenche em baixo.</p>';
+    if (f.faltas.length) h += '<p>Não encontrámos na fatura: <b>' + esc(f.faltas.join(', ')) + '</b>. Preenche ao lado.</p>';
     h += '<p class="el-fat-nota">Uma fatura é só um mês. Se o consumo mudar muito entre verão e inverno, ajusta o valor para a média do ano.</p>';
     return '<div class="el-fat-res">' + h + '<button type="button" class="el-fat-x" data-fat-fechar aria-label="Fechar">×</button></div>';
   }
