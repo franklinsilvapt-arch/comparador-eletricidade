@@ -33,7 +33,7 @@
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261005h';
+  var VERSAO = '20261005i';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -83,12 +83,12 @@
 
   var S = {
     data: null, erro: false,
-    unid: 'eur', valor: 45, kwhIn: null, eurIn: 45, kwhMes: 0, pot: 2, tarifa: 'auto', vazio: 40, ponta: 20, fam: false, social: false, idx: true, mais: false, ciclo: 'd', omie: null,
+    unid: 'eur', valor: 45, kwhIn: null, eurIn: 45, eurTocado: false, kwhMes: 0, pot: 2, tarifa: 'auto', vazio: 40, ponta: 20, fam: false, social: false, idx: true, mais: false, ciclo: 'd', omie: null,
     on: {}, novo: true, open: null, visible: 10, formOpen: false, perfil: null,
     ver: 'melhor', com: '', sort: 'total', meuCom: '', meuId: '', fat: null, meuFat: null, calculado: false
   };
   /* F = o que esta no formulario; S = o que foi comparado (so muda ao carregar em "Comparar ofertas") */
-  var CAMPOS = ['unid', 'valor', 'kwhIn', 'eurIn', 'kwhMes', 'pot', 'tarifa', 'vazio', 'ponta', 'ciclo', 'fam', 'social', 'novo', 'perfil', 'meuCom', 'meuId'];
+  var CAMPOS = ['unid', 'valor', 'kwhIn', 'eurIn', 'eurTocado', 'kwhMes', 'pot', 'tarifa', 'vazio', 'ponta', 'ciclo', 'fam', 'social', 'novo', 'perfil', 'meuCom', 'meuId'];
   var F = {};
   function sincronizarF() { CAMPOS.forEach(function (k) { F[k] = S[k]; }); }
   sincronizarF();
@@ -280,7 +280,7 @@
   function cartao(it, idx, base, baseLabel) {
     var o = it.o, r = it.r, nome = nomeDe(o.c), aberto = S.open === o.id;
     var dif = base != null ? base - r.total : null, poup;
-    if (o.c === 'TUR' && !(S.eurIn > 0) && !S.meuId) poup = '<div class="dp-kpi-v is-plain" style="color:#697386">–</div><div class="dp-kpi-s">é a referência</div>';
+    if (o.c === 'TUR' && !(S.eurIn > 0 && S.eurTocado) && !S.meuId) poup = '<div class="dp-kpi-v is-plain" style="color:#697386">–</div><div class="dp-kpi-s">é a referência</div>';
     else if (dif == null) poup = '<div class="dp-kpi-v is-plain" style="color:#697386">–</div><div class="dp-kpi-s">&nbsp;</div>';
     else if (dif >= 0.5) poup = '<div class="dp-kpi-v el-pos">' + eurInt(dif) + '</div><div class="dp-kpi-s">a menos por ano</div>';
     else if (dif <= -0.5) poup = '<div class="dp-kpi-v is-plain el-neg">+' + eurInt(-dif) + '</div><div class="dp-kpi-s">a mais por ano</div>';
@@ -406,7 +406,7 @@
     if (F.tarifa !== 'auto' && !tarifaDisponivel(F.tarifa)) F.tarifa = 'auto';
 
     var res = resultados(), lst = res.lista, vis = lst.slice(0, S.visible);
-    var eurM = S.eurIn > 0;
+    var eurM = S.eurIn > 0 && S.eurTocado; /* o 45€ de exemplo nao serve de base */
     var base = eurM ? S.eurIn * 12 : (res.reg ? res.reg.total : null);
     var baseLabel = eurM ? 'Face à tua fatura' : 'Face ao regulado', baseTxt = eurM ? 'a tua fatura' : 'o mercado regulado';
     var meuF = null;
@@ -486,7 +486,7 @@
       '<div><label class="dp-label" for="elKwh">Consumo por mês</label><div class="dp-input-wrap el-val"><input id="elKwh" class="dp-input" type="text" inputmode="decimal" autocomplete="off" placeholder="ex.: 150" value="' + txtNum(F.kwhIn) + '"><span class="el-suf">kWh</span></div></div>' +
       '<div><label class="dp-label" for="elEur">Quanto pagas por mês</label><div class="dp-input-wrap el-val"><input id="elEur" class="dp-input" type="text" inputmode="decimal" autocomplete="off" placeholder="ex.: 45" value="' + txtNum(F.eurIn) + '"><span class="el-suf">€</span></div></div>' +
       '</div>' +
-      '<p class="el-ajuda">' + (F.kwhIn > 0 && F.eurIn > 0 ? 'A poupança é calculada face aos <b>' + eurInt(F.eurIn) + '</b> que pagas hoje.' : F.eurIn > 0 ? 'Com ' + eurInt(F.eurIn) + ' estimamos cerca de <b>' + milhar(String(Math.round(F.kwhMes))) + ' kWh</b> por mês aos preços do regulado. Põe o teu valor, ou o consumo em kWh se o souberes.' : F.kwhIn > 0 ? (F.meuId ? 'A poupança é calculada face ao teu tarifário atual.' : 'Põe também quanto pagas para veres a poupança face à tua fatura.') : 'Basta um dos dois. Os dois estão na fatura.') + '</p>' +
+      '<p class="el-ajuda">' + (F.kwhIn > 0 && F.eurIn > 0 && F.eurTocado ? 'A poupança é calculada face aos <b>' + eurInt(F.eurIn) + '</b> que pagas hoje.' : F.kwhIn > 0 && F.eurIn > 0 ? 'Os ' + eurInt(F.eurIn) + ' são um exemplo: põe o que pagas para veres a poupança face à tua fatura.' : F.eurIn > 0 ? (F.eurTocado ? 'Com ' + eurInt(F.eurIn) + ' estimamos cerca de <b>' + milhar(String(Math.round(F.kwhMes))) + ' kWh</b> por mês aos preços do regulado. Se souberes o consumo em kWh, põe-no ao lado.' : 'Valor de exemplo (cerca de <b>' + milhar(String(Math.round(F.kwhMes))) + ' kWh</b> por mês). Põe o que pagas, ou o consumo em kWh se o souberes.') : F.kwhIn > 0 ? (F.meuId ? 'A poupança é calculada face ao teu tarifário atual.' : 'Põe também quanto pagas para veres a poupança face à tua fatura.') : 'Basta um dos dois. Os dois estão na fatura.') + '</p>' +
       '<div class="el-via-g"><label class="dp-label" for="elPot">Potência contratada</label><select class="dp-input dp-input-select" id="elPot">' + potOpts + '</select></div>' +
       '<div class="el-via-g"><span class="dp-label">Sem fatura? Escolhe o perfil mais parecido</span><div class="el-perfis">' + perfis + '</div>' +
       (pfSel ? '<p class="el-ajuda">Exemplo: ' + potTxt(POTS[pfSel.pot]) + ' e cerca de <b>' + milhar(String(Math.round(pfSel.kwh / 12))) + ' kWh</b> por mês.</p>' : '') + '</div>' +
@@ -571,7 +571,7 @@
   function lerNumero(el) {
     var n = parseFloat(String(el.value).replace(/\./g, '').replace(',', '.'));
     var v = isNaN(n) || n <= 0 ? null : Math.min(n, 20000);
-    if (el.id === 'elKwh') F.kwhIn = v; else F.eurIn = v;
+    if (el.id === 'elKwh') F.kwhIn = v; else { F.eurIn = v; F.eurTocado = true; }
     F.perfil = null;
   }
   document.addEventListener('input', function (e) {
@@ -725,9 +725,9 @@
     if (!q.sim) return false;
     S.calculado = true;
     var v = parseFloat(String(q.val || '').replace(',', '.'));
-    if (v > 0 && v < 100000) { if (q.un === 'eur') S.eurIn = v; else S.kwhIn = v; }
+    if (v > 0 && v < 100000) { if (q.un === 'eur') { S.eurIn = v; S.eurTocado = true; } else S.kwhIn = v; }
     var vk = parseFloat(String(q.kwh || '').replace(',', '.')); if (vk > 0 && vk < 100000) S.kwhIn = vk;
-    var ve = parseFloat(String(q.eur || '').replace(',', '.')); if (ve > 0 && ve < 100000) S.eurIn = ve;
+    var ve = parseFloat(String(q.eur || '').replace(',', '.')); if (ve > 0 && ve < 100000) { S.eurIn = ve; S.eurTocado = true; }
     var pi = parseInt(q.pot, 10); if (pi >= 0 && pi < POTS.length) S.pot = pi;
     if (q.tar in TARIFAS || q.tar === 'auto') S.tarifa = q.tar;
     var vz = parseInt(q.vz, 10); if (vz >= 5 && vz <= 90) S.vazio = vz;
@@ -745,7 +745,7 @@
   function urlSim() {
     var p = ['sim=1', 'pot=' + S.pot];
     if (S.kwhIn > 0) p.push('kwh=' + encodeURIComponent(String(S.kwhIn)));
-    if (S.eurIn > 0) p.push('eur=' + encodeURIComponent(String(S.eurIn)));
+    if (S.eurIn > 0 && S.eurTocado) p.push('eur=' + encodeURIComponent(String(S.eurIn)));
     if (S.tarifa !== 'auto') p.push('tar=' + S.tarifa);
     if (S.vazio !== 40) p.push('vz=' + S.vazio);
     if (S.ponta !== 20) p.push('pt=' + S.ponta);
