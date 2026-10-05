@@ -185,9 +185,11 @@ def ibelectra_ofertas(html, produto, url, ficha):
 ENDESA = [
     # (chave, ficheiro PDF, pagina da oferta, nome, renovavel, pagamento, fatura, contratacao, modalidade)
     ("digital", "tarifa-digital", "https://www.endesa.pt/particulares/planos/luz/digital-luz", "Tarifa Digital Luz",
-     "1", "100", "10", "100", "Contratação online, débito direto e fatura digital (desconto de 20% para sempre)"),
+     "1", "100", "10", "100", "Contratação online, débito direto e fatura digital (desconto de 20% para sempre)", ""),
     ("aniversario", "tarifa-aniversario", "https://www.endesa.pt/particulares/planos/luz/aniversario-luz", "Tarifa Aniversário Luz",
-     "0", "111", "11", "111", ""),
+     "0", "111", "11", "111", "", ""),
+    ("queromais", "tarifa-quero-mais", "https://www.endesa.pt/particulares/planos/luz/quero-mais-luz", "Tarifa Quero+ Luz",
+     "0", "111", "11", "111", "", "Com débito direto, fatura digital, gás ou serviços de assistência o desconto sobe até 20%."),
 ]
 PDF_BASE = "https://www.endesa.pt/content/dam/endesa-pt/precos/"
 MESES = {m: i + 1 for i, m in enumerate(["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
@@ -203,40 +205,61 @@ def endesa_texto(pdf_bytes):
     raise ValueError("Endesa: nao encontrei a tabela de precos no PDF")
 
 
-def endesa_precos(texto):
-    """Le a tabela de precos da luz. Os numeros vem em blocos (um por potencia); cada combinacao de termo
-    de potencia e energia so e aceite se reproduzir o 'Preco Total (Eur/100kWh/mes)' da propria ficha,
-    calculado com 30 dias e 100 kWh (na bi-horaria, 50 kWh em cada periodo). Devolve {n: (simples, bi)}."""
+def endesa_precos(texto, desconto_min=True):
+    """Le a tabela de precos da luz. Os numeros vem em blocos (um por potencia). Uma combinacao de termo de
+    potencia e energia so e aceite se reproduzir um 'Preco Total (Eur/100kWh/mes)' da propria ficha, calculado
+    com 30 dias e 100 kWh (na bi-horaria, 50 kWh em cada periodo). Alem das colunas publicadas, experimenta
+    descontos de 1% a 30% sobre os precos base, porque algumas fichas so mostram o total de cada cenario.
+    Quando ha varios cenarios (ex.: so luz, luz e gas, com servicos), fica o de menor desconto, que e o preco
+    sem condicoes extra. Devolve (n potencias, (simples, bi), desconto)."""
     corpo = texto[re.search(r"abela\s*de\s*pre", texto).end():]
     vals = [num(t) for t in re.findall(r"(?<![\d,])\d+,\d+(?![\d,])", corpo)]
-    res = {}
-    for n in (10, 6):
+    melhor = None
+    for n in (10, 6, 4):
         jan = [vals[i:i + n] for i in range(len(vals) - n + 1)]
         cresc = [w for w in jan if all(a < b for a, b in zip(w, w[1:]))]
         totais = [w for w in cresc if all(x > 5 for x in w)]
         tfs = [w for w in cresc if all(0.03 < x < 4 for x in w)]
         ens = sorted({w[0] for w in jan if len(set(w)) == 1 and 0.05 < w[0] < 0.6})
-        simples = bi = None
+        if not totais or not tfs or not ens:
+            continue
+        # Ficam so as colunas "base": uma coluna que e um desconto de 1% a 30% de outra coluna e descartada,
+        # para que o desconto encontrado seja sempre medido em relacao ao preco base da ficha
+        def derivada(c, outras, tol):
+            return any(o is not c and any(all(abs(oi * (1 - d / 100) - ci) <= tol for oi, ci in zip(o, c)) for d in range(1, 31)) for o in outras)
+        tfs = [tf for tf in tfs if not derivada(tf, tfs, 0.00051)]
+        ens = [e for e in ens if not derivada((e,), [(x,) for x in ens], 0.0000051)]
+        cand_tf = {(d, tuple(round(x * (1 - d / 100), 4) for x in tf)) for tf in tfs for d in range(0, 31)}
+        cand_e = {(d, round(e * (1 - d / 100), 6)) for e in ens for d in range(0, 31)}
         ok = lambda T, f: all(abs(f(i) - T[i]) <= 0.011 for i in range(n))
         for T in totais:
-            achou = False
-            for tf in tfs:
-                for e in ens:
-                    if ok(T, lambda i: tf[i] * 30 + 100 * e):
-                        simples, achou = simples or (tf, e), True
-            if achou:
+            achados = []
+            for d, tf in cand_tf:
+                for d2, e in cand_e:
+                    if d == d2 and ok(T, lambda i: tf[i] * 30 + 100 * e):
+                        achados.append((d, tf, e))
+            if not achados:
                 continue
-            for tf in tfs:
-                for e1 in ens:
-                    for e2 in ens:
-                        if e1 > e2 and ok(T, lambda i: tf[i] * 30 + 50 * e1 + 50 * e2):
-                            bi = bi or (tf, e1, e2)
-        if simples:
-            res[n] = (simples, bi)
-    if not res:
+            d, tf, e = min(achados)
+            bi = None
+            for d3, tfb in cand_tf:
+                if d3 != d:
+                    continue
+                for T2 in totais:
+                    if T2 is T:
+                        continue
+                    for d4, e1 in cand_e:
+                        for d5, e2 in cand_e:
+                            if d4 == d5 == d and e1 > e2 and ok(T2, lambda i: tfb[i] * 30 + 50 * e1 + 50 * e2):
+                                bi = bi or (list(tfb), e1, e2)
+            sol = (n, ((list(tf), e), bi), d)
+            if melhor is None or (n, -d) > (melhor[0], -melhor[2]):
+                melhor = sol
+        if melhor:
+            break
+    if not melhor:
         raise ValueError("Endesa: nenhuma combinacao de precos reproduz o preco total da ficha")
-    n = max(res)
-    return n, res[n]
+    return melhor
 
 
 def endesa_campanha(html):
@@ -255,8 +278,8 @@ def endesa_campanha(html):
     return int(m.group(1)), fim.strftime("%d/%m/%Y")
 
 
-def endesa_ofertas(chave, ficheiro, url, nome, renov, pg, ft, ct, modal, pdf_bytes, html):
-    n, (simples, bi) = endesa_precos(endesa_texto(pdf_bytes))
+def endesa_ofertas(chave, ficheiro, url, nome, renov, pg, ft, ct, modal, nota_desc, pdf_bytes, html):
+    n, (simples, bi), desc = endesa_precos(endesa_texto(pdf_bytes))
     tf, e = simples
     s = [[tf[i], e] if i < n else 0 for i in range(NPOT)]
     x = {"id": f"SITE_END_{chave.upper()}", "c": "END", "n": nome, "f": f"0{renov}000100", "pg": pg, "ft": ft,
@@ -264,6 +287,8 @@ def endesa_ofertas(chave, ficheiro, url, nome, renov, pg, ft, ct, modal, pdf_byt
          "s": compacta(s, 2)}
     if modal:
         x["m"] = modal
+    if desc and nota_desc:
+        x["to"] = f"Tarifário fixo sem fidelização. Preço com {desc}% de desconto sobre o preço base, sem outras condições. " + nota_desc
     if bi:
         tfb, fv, vz = bi
         x["b"] = compacta([[tfb[i], fv, vz] if i < n else 0 for i in range(NPOT)], 3)

@@ -20,7 +20,8 @@ Ficheiro "Ofertas comerciais (CSV)" do [simulador de preços da ERSE](https://si
 O ficheiro da ERSE às vezes não tem ofertas em vigor: quando uma oferta termina e o comercializador ainda não comunicou a renovação, ou quando a oferta nunca foi comunicada. Para essas, o script lê os preços todos os dias no site do próprio comercializador:
 
 - Ibelectra, Solução Conforto e Solução Segura: tabelas da página de cada oferta (três variantes: DD + FE, DD ou FE, preço base).
-- Endesa, Tarifa Digital Luz e Tarifa Aniversário Luz: ficha de preços em PDF. Uma combinação de preços só é aceite se reproduzir o "Preço Total (Eur/100kWh/mês)" da própria ficha. O crédito de campanha (ex.: 50€ em 10 faturas) vem da página da oferta e só conta enquanto a campanha estiver válida.
+- Endesa, Tarifa Digital Luz, Tarifa Aniversário Luz e Tarifa Quero+ Luz: ficha de preços em PDF. Uma combinação de preços só é aceite se reproduzir o "Preço Total (Eur/100kWh/mês)" da própria ficha. Quando a ficha tem vários cenários (só luz, luz e gás, com serviços), fica o de menor desconto sobre o preço base, que é o preço sem condições extra; na Quero+ é hoje 14%. O crédito de campanha (ex.: 50€ em 10 faturas) vem da página da oferta e só conta enquanto a campanha estiver válida.
+- Fora do comparador por não terem preço fixo publicado: Endesa Tranquilidade e Happy (os totais da ficha não se reproduzem a partir dos preços da tabela), MUON (só tem tarifas indexadas definidas por fórmula, sem preço de energia por kWh) e Luzigás Super Lig Fixo (sem preço público).
 
 Se a ERSE voltar a publicar a oferta, fica a versão da ERSE. As ofertas lidas dos sites têm `"src": "site"` no `ofertas.json` e o comparador mostra essa fonte.
 
