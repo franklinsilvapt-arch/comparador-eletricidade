@@ -427,9 +427,10 @@
       '<select class="dp-select" id="elSort" aria-label="Ordenar por">' + op('total', S.sort, 'Fatura mais baixa') + op('energia', S.sort, 'Energia mais barata') + op('potencia', S.sort, 'Potência mais barata') + op('nome', S.sort, 'Nome do comercializador') + '</select>' +
       '</div></div>';
 
+    var cicloSel = '<div' + (S.tarifa === 's' ? ' class="el-off"' : '') + '><label class="dp-label" for="elCiclo">Ciclo horário</label><select class="dp-input dp-input-select" id="elCiclo"' + (S.tarifa === 's' ? ' disabled' : '') + '>' + op('d', S.ciclo, 'Ciclo diário') + op('s', S.ciclo, 'Ciclo semanal') + '</select></div>';
     var horas = tri
-      ? '<div class="el-duo"><div><label class="dp-label" for="elVazio">Consumo em vazio</label><select class="dp-input dp-input-select" id="elVazio">' + vzOpts + '</select></div><div><label class="dp-label" for="elPonta">Em ponta</label><select class="dp-input dp-input-select" id="elPonta">' + ptOpts + '</select></div></div>'
-      : '<div' + (S.tarifa === 's' ? ' class="el-off"' : '') + '><label class="dp-label" for="elVazio">Consumo em vazio</label><select class="dp-input dp-input-select" id="elVazio"' + (S.tarifa === 's' ? ' disabled' : '') + '>' + vzOpts + '</select></div>';
+      ? '<div class="el-duo"><div><label class="dp-label" for="elVazio">Consumo em vazio</label><select class="dp-input dp-input-select" id="elVazio">' + vzOpts + '</select></div><div><label class="dp-label" for="elPonta">Em ponta</label><select class="dp-input dp-input-select" id="elPonta">' + ptOpts + '</select></div></div>' + cicloSel
+      : '<div' + (S.tarifa === 's' ? ' class="el-off"' : '') + '><label class="dp-label" for="elVazio">Consumo em vazio</label><select class="dp-input dp-input-select" id="elVazio"' + (S.tarifa === 's' ? ' disabled' : '') + '>' + vzOpts + '</select></div>' + cicloSel;
 
     root.innerHTML = cabecalho() +
       '<div class="dp-card' + (S.formOpen ? ' is-open' : '') + '"><button type="button" class="dp-card-toggle" data-cardtoggle aria-expanded="' + (S.formOpen ? 'true' : 'false') + '"><span><span class="dp-card-toggle-t">Consumo, potência e tarifa</span><span class="dp-card-toggle-s">' + resumo + '</span></span>' + CARET + '</button>' +
@@ -449,7 +450,7 @@
       (S.mais ? '<div class="el-avancado"><div class="el-av-g">' +
         '<div><span class="dp-label">Tarifa</span><div class="dp-toggle el-toggle4">' + tarifas + '</div></div>' + horas + '</div>' +
         '<div class="el-caso"><span class="dp-label">O teu caso</span><div class="el-caso-c">' + caso + '</div></div>' +
-        '<p class="dp-form-note">O vazio é o consumo à noite e, no ciclo semanal, ao fim de semana. ' + (S.tarifa === 'auto' ? 'Em "Mais barata" comparamos a tarifa simples com a bi-horária. ' : '') +
+        '<p class="dp-form-note">' + (S.ciclo === 's' ? 'No ciclo semanal, o vazio é das 0h às 7h nos dias úteis, grande parte do sábado e todo o domingo. Em casas com consumo ao fim de semana costuma ficar entre 50% e 60%. ' : 'No ciclo diário, o vazio é das 22h às 8h, todos os dias. Numa casa típica fica entre 35% e 45% do consumo. ') + 'O ciclo está na fatura e podes pedir ao comercializador para o mudar sem custos. ' + (S.tarifa === 'auto' ? 'Em "Mais barata" comparamos a tarifa simples com a bi-horária. ' : '') +
         'As famílias numerosas (cinco ou mais pessoas) têm IVA a 6% nos primeiros ' + KWH_IVA6_FAM + ' kWh por mês, em vez de ' + KWH_IVA6 + ' kWh. A tarifa social é um desconto para famílias com rendimentos baixos, atribuído de forma automática, e aplica-se em qualquer comercializador.</p></div>' : '') +
       '</div></div>' +
       '<div class="dp-bar"><div class="dp-chips">' + chips + '</div></div>' +
@@ -525,6 +526,7 @@
     if (id === 'elPot') { S.pot = parseInt(v, 10) || 0; S.perfil = null; atualizarConsumo(); S.visible = 10; render(); }
     if (id === 'elVazio') { S.vazio = parseInt(v, 10) || 40; render(); }
     if (id === 'elPonta') { S.ponta = parseInt(v, 10) || 20; render(); }
+    if (id === 'elCiclo') { S.ciclo = v === 's' ? 's' : 'd'; render(); }
     if (id === 'elVer') { S.ver = v; S.visible = 10; render(); }
     if (id === 'elCom') { S.com = v; S.visible = 10; render(); }
     if (id === 'elMeuCom') { S.meuCom = v; S.meuId = ''; render(); }
