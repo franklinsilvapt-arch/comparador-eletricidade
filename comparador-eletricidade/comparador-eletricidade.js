@@ -636,9 +636,9 @@
     if (f && f.aLer) return '<div class="el-drop is-busy"><div class="el-drop-i">' + ico(IC.doc) + '</div><p class="el-drop-t">A ler a fatura…</p></div>';
     if (f && (f.erro || f.r)) return resumoFatura() + '<button type="button" class="el-fat-outra" data-fatura>' + ico(IC.doc) + 'Carregar outra fatura</button>';
     return '<div class="el-drop" data-fatura role="button" tabindex="0" aria-label="Carregar a fatura em PDF"><div class="el-drop-i">' + ico(IC.doc) + '</div>' +
-      '<p class="el-drop-t">Arrasta a fatura para aqui ou <span class="el-drop-l">escolhe o ficheiro</span></p>' +
-      '<p class="el-drop-s">Fatura eletrónica em PDF, da área de cliente ou do email do comercializador.</p>' +
-      '<p class="el-drop-p">' + ico(IC.lock) + 'É lida no teu browser e não sai do teu computador.</p></div>';
+      '<div class="el-drop-c"><p class="el-drop-t">Arrasta a fatura para aqui ou</p>' +
+      '<span class="dp-irs-b el-drop-b">Escolher o ficheiro PDF</span>' +
+      '<p class="el-drop-p">' + ico(IC.lock) + 'Lida no teu browser. Não sai do teu computador.</p></div></div>';
   }
   function resumoFatura() {
     var f = S.fat;
