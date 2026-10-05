@@ -1,6 +1,8 @@
 /* Comparador de eletricidade: suplemento ao CSS do comparador de depositos (#lf-dp .dp-*). */
 #lf-dp .el-toggle4{grid-template-columns:repeat(4,1fr)}
-#lf-dp .el-val .dp-input{padding-right:116px}
+#lf-dp .el-val .dp-input{padding-right:60px}
+#lf-dp .el-suf{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:500;color:var(--text-quaternary);pointer-events:none}
+#lf-dp .el-go-n.is-erro{color:#b42318;font-weight:500}
 #lf-dp .el-unid{position:absolute;top:4px;right:4px;bottom:4px;display:flex;gap:2px;padding:2px;border-radius:var(--radius-lg);background:var(--bg-tertiary)}
 #lf-dp .el-unid-b{border:0;background:transparent;border-radius:var(--radius-md);padding:0 12px;font:inherit;font-size:14px;font-weight:500;color:#4F5969;cursor:pointer}
 #lf-dp .el-unid-b.is-on{background:#3A4454;color:#fff}
