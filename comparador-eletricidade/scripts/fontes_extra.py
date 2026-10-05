@@ -128,12 +128,30 @@ def ibelectra_ofertas(html, produto, url, ficha):
     tri_var = tabs[3:6]
     if [p for p, _ in simples] != POTS[:10] or [p for p, _ in bi] != POTS[:10] or [p for p, _ in tf_alta] != POTS[10:]:
         raise ValueError(f"Ibelectra {produto}: potencias inesperadas")
+    # Termo de potencia: aparece na tabela da simples e na da bi-horaria. Se as duas tabelas discordarem
+    # (gralha numa delas), fica o valor coerente com o desconto das outras potencias face ao preco base.
+    base = []
+    for (_, rs), (_, rb) in zip(simples, bi):
+        if rs[2] is None or rb[2] is None or abs(rs[2] - rb[2]) > 0.00005:
+            raise ValueError(f"Ibelectra {produto}: preco base do termo de potencia diferente entre tabelas")
+        base.append(rs[2])
+    tfv = {2: base}
+    for v in (0, 1):
+        rat = sorted(rs[v] / b for (_, rs), b in zip(simples, base) if rs[v])
+        med = rat[len(rat) // 2]
+        col = []
+        for (_, rs), (_, rb), b in zip(simples, bi, base):
+            cand = [x for x in (rs[v], rb[v]) if x is not None]
+            if not cand:
+                raise ValueError(f"Ibelectra {produto}: termo de potencia em falta")
+            x = min(cand, key=lambda x: abs(x / b - med))
+            if abs(x / b - med) > 0.002:
+                raise ValueError(f"Ibelectra {produto}: termo de potencia incoerente com o desconto ({x} face a {b})")
+            col.append(x)
+        tfv[v] = col
     ofertas = []
     for v, (suf, pg, ft, modal) in enumerate(IBELECTRA_VAR):
-        tf = [r[v] for _, r in simples]
-        tf_bi = [r[v] for _, r in bi]
-        if any(x is None or y is None or abs(x - y) > 0.0005 for x, y in zip(tf, tf_bi)):
-            raise ValueError(f"Ibelectra {produto}: termo de potencia muito diferente entre simples e bi-horaria")
+        tf = tf_bi = tfv[v]
         e = unico([r[3 + v] for _, r in simples], f"Ibelectra {produto} energia simples")
         fv = unico([r[3 + v] for _, r in bi], f"Ibelectra {produto} fora de vazio")
         vz = unico([r[6 + v] for _, r in bi], f"Ibelectra {produto} vazio")
