@@ -62,3 +62,15 @@
 
 #lf-dp .el-share{margin-left:10px;vertical-align:middle}
 #lf-dp .el-meu .el-ajuda{margin-top:6px}
+
+#lf-dp .el-fat-l{display:flex;align-items:center;gap:10px}
+#lf-dp .el-fat-b{padding:11px 14px;font-size:14px;line-height:20px;border-radius:var(--radius-xl);display:inline-flex;align-items:center;gap:8px}
+#lf-dp .el-fat-b .dp-i{width:16px;height:16px}
+#lf-dp .el-fat-in{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+#lf-dp .el-fat-res{position:relative;margin-top:10px;padding:12px 36px 12px 14px;border:1px solid var(--border-secondary);border-radius:var(--radius-lg);background:var(--bg-tertiary);font-size:13px;line-height:19px;color:var(--text-secondary)}
+#lf-dp .el-fat-res p{margin:0 0 6px}
+#lf-dp .el-fat-res p:last-child{margin-bottom:0}
+#lf-dp .el-fat-res b{font-weight:600;color:var(--text-primary)}
+#lf-dp .el-fat-res.is-erro{border-color:#e0b4b4}
+#lf-dp .el-fat-nota{color:var(--text-quaternary);font-size:12px}
+#lf-dp .el-fat-x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:18px;line-height:1;color:var(--text-quaternary);cursor:pointer;padding:4px}

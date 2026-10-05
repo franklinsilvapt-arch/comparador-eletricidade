@@ -53,3 +53,18 @@ Parâmetros a rever no topo do `comparador-eletricidade.js` quando mudarem: term
 ```
 python3 scripts/atualizar_ofertas.py --zip CSV.zip --data 2026-09-29
 ```
+
+## Leitura de faturas em PDF (fatura.js)
+
+O botão "Carregar fatura em PDF" lê a fatura no browser com o pdf.js (cdnjs) e preenche o formulário. Nada sai do computador da pessoa. O `fatura.js` só é descarregado quando alguém escolhe um ficheiro.
+
+O que se lê, por ordem de prioridade:
+- Comercializador: nome, NIPC ou domínio com mais ocorrências no texto.
+- Potência: valor "x,xx kVA" mais frequente.
+- Tarifa: "tri-horária", "bi-horária", "simples" ou "sem ciclo"; ciclo diário ou semanal quando a fatura o diz.
+- Dias: "Período de faturação: ... a ...", senão as datas ou os "N dias" da linha do termo de potência.
+- kWh: soma das linhas do Imposto Especial de Consumo (incide sobre todos os kWh), ignorando acertos ("abate") e linhas com datas fora do período. Se não houver, soma das linhas de energia.
+- Repartição vazio/ponta/cheias: a Endesa imprime "Cheia: x kWh | Ponta: y kWh | Vazio: z kWh" e a EDP descreve as leituras por período. Com isto, uma fatura simples passa a comparar simples com bi-horária com a repartição real.
+- Preços sem IVA (energia por kWh e potência por dia), para tentar reconhecer o tarifário atual entre as ofertas do mesmo comercializador. Só é escolhido se houver uma única oferta com esses preços.
+
+Formatos testados: EDP Comercial, Endesa e G9 Energy (indexada). Faturas digitalizadas sem texto dão erro com indicação para usar a fatura eletrónica. As faturas usadas nos testes têm dados pessoais e não estão no repositório.
