@@ -295,9 +295,14 @@ def endesa_ofertas(chave, ficheiro, url, nome, renov, pg, ft, ct, modal, nota_de
     camp = endesa_campanha(html) if html else None
     if camp:
         euros, fim = camp
-        x["d"] = [float(euros), 0.0, 0.0, 0.0]
+        # O regulamento da Endesa diz que o credito "e aplicado sobre o total da fatura, antes da aplicacao do IVA".
+        # Na fatura final vale por isso euros x 1,23 (IVA da energia). O comparador trata d[0] como valor final.
+        com_iva = round(euros * 1.23, 2)
+        x["d"] = [com_iva, 0.0, 0.0, 0.0]
         x["f"] = x["f"][:7] + "1"
-        x["ob"] = f"Campanha para novos clientes: {euros}€ de desconto nas primeiras faturas, para adesões até {fim}."
+        txt_iva = f"{com_iva:.2f}".replace(".", ",")
+        x["ob"] = (f"Campanha para novos clientes: {euros}€ de desconto nas primeiras 10 faturas, para adesões até {fim}. "
+                   f"O desconto é aplicado antes do IVA, por isso vale {txt_iva}€ na fatura final.")
     return [x]
 
 
