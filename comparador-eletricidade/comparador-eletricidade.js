@@ -37,7 +37,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006n';
+  var VERSAO = '20261006o';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -87,7 +87,7 @@
 
   var S = {
     data: null, erro: false,
-    unid: 'eur', valor: 45, kwhIn: null, eurIn: 45, eurTocado: false, kwhMes: 0, pot: 2, tarifa: 'auto', vazio: 40, ponta: 20, fam: false, social: false, idx: true, mais: false, ciclo: 'd', omie: null,
+    unid: 'eur', valor: 45, kwhIn: null, eurIn: 45, eurTocado: false, kwhMes: 0, pot: 2, tarifa: 'auto', vazio: 40, ponta: 20, fam: false, social: false, idx: false, mais: false, ciclo: 'd', omie: null,
     on: {}, novo: true, open: null, visible: 10, formOpen: true, perfil: null,
     ver: 'melhor', com: '', sort: 'total', meuCom: '', meuId: '', fat: null, meuFat: null, calculado: false
   };
@@ -257,7 +257,7 @@
       var r = calc(o, S.pot, c, S.tarifa);
       if (!r) return;
       if (o.c === 'TUR') reg = r;
-      if (!S.idx && o.f.charAt(3) === '1') { nIdx++; return; }
+      if (o.f.charAt(3) === '1') { nIdx++; if (!S.idx) return; }
       for (var j = 0; j < FILTROS.length; j++) if (S.on[FILTROS[j].k] && !FILTROS[j].f(o)) return;
       coms[o.c] = 1;
       todos.push({ o: o, r: r });
@@ -285,7 +285,7 @@
   function tags(o) {
     var t = [];
     if (o.c === 'TUR') t.push('<span class="dp-tag">Tarifa regulada</span>');
-    if (o.f.charAt(3) === '1') t.push('<span class="dp-tag is-warn">Indexada ao mercado</span>');
+    if (o.f.charAt(3) === '1') t.push('<span class="dp-tag is-warn">Preço indexado · estimativa</span>');
     if (o.f.charAt(7) === '1') t.push('<span class="dp-tag is-warn">Só novos clientes</span>');
     if (o.f.charAt(0) === '1') t.push('<span class="dp-tag is-warn">Fidelização</span>');
     if (o.f.charAt(4) === '1') t.push('<span class="dp-tag is-warn">Serviços adicionais</span>');
@@ -345,6 +345,12 @@
     return h + '<button type="button" class="dp-c-toggle" data-toggle>' + (aberto ? 'Menos detalhes' : 'Ver as contas e as condições') + CARET + '</button></div>';
   }
 
+  function notaIdx(n) {
+    /* explica a diferenca entre preco fixo e indexado junto ao botao, em vez de so na nota tecnica do fim da pagina */
+    if (!n) return '';
+    if (!S.idx) return '<p class="dp-form-note el-idx-nota"><b>Preço fixo</b>: pagas o mesmo por kWh durante o contrato, é o que a maioria das casas tem. <b>Preço indexado</b>: o kWh muda todos os meses com o mercado grossista. Ficaram de fora ' + n + ' tarifas indexadas. Para as ver, desliga o botão "Só preço fixo".</p>';
+    return '<p class="dp-form-note el-idx-nota is-on">Estão incluídas <b>' + n + ' tarifas indexadas</b>, marcadas com a etiqueta "Preço indexado". A fatura delas é uma estimativa com o preço médio do mercado grossista dos últimos 30 dias e sobe e desce todos os meses. As restantes têm preço fixo durante o contrato.</p>';
+  }
   function notaIndexada(o, r) {
     var om = S.omie;
     if (!r.omie || !om) return '<b>Preço indexado.</b> O valor mostrado é a estimativa da ERSE com o preço esperado do mercado grossista para os próximos três meses' + (S.data.omie_ref ? ' (' + num(S.data.omie_ref, 2) + '€/MWh)' : '') + '. A fatura real sobe e desce com o mercado.';
@@ -477,7 +483,7 @@
     var perfis = PERFIS.map(function (p) {
       return '<button type="button" class="dp-irs-b' + (F.perfil === p.k ? ' is-on' : '') + '" data-perfil="' + p.k + '">' + p.l + '<small>' + milhar(String(Math.round(p.kwh / 12))) + ' kWh · ' + potTxt(POTS[p.pot]) + '</small></button>';
     }).join('');
-    var chips = '<button type="button" class="dp-chip' + (S.idx ? '' : ' is-on') + '" data-idx>' + ico(IC.wave) + 'Só tarifas de preço fixo' + (S.idx ? '' : ' (' + res.nIdx + ' indexadas de fora)') + '</button>' + FILTROS.map(function (f) {
+    var chips = '<button type="button" class="dp-chip' + (S.idx ? '' : ' is-on') + '" data-idx>' + ico(IC.wave) + 'Só preço fixo' + (S.idx ? '' : ' (' + res.nIdx + ' indexadas de fora)') + '</button>' + FILTROS.map(function (f) {
       return '<button type="button" class="dp-chip' + (S.on[f.k] ? ' is-on' : '') + '" data-f="' + f.k + '">' + ico(IC[f.i]) + esc(f.l) + '</button>';
     }).join('');
     var caso = '<button type="button" class="dp-chip' + (F.novo ? ' is-on' : '') + '" data-novo>' + ico(IC.gift) + 'Contar descontos de novo cliente</button>' +
@@ -576,14 +582,14 @@
       '<div class="el-go"><button type="button" class="dp-btn el-go-b" data-comparar>' + (S.calculado ? (alterado() ? 'Atualizar a comparação' : 'Comparar outra vez') : 'Comparar ofertas') + ico(IC.down) + '</button>' +
       (S.erroForm ? '<span class="el-go-n is-erro">' + esc(S.erroForm) + '</span>' : alterado() ? '<span class="el-go-n">Alteraste os dados. Os resultados em baixo ainda são da comparação anterior.</span>' : '') + '</div>' +
       '</div></div>' + ANALISE) +
-      (S.calculado ? banner + '<div class="dp-bar"><div class="dp-chips">' + chips + '</div></div>' +
+      (S.calculado ? banner + '<div class="dp-bar"><div class="dp-chips">' + chips + '</div></div>' + notaIdx(res.nIdx) +
       ctl +
       (lst.length ? '<div class="dp-cards">' + cards + '</div>' : '<div class="dp-empty">' + (S.social && S.pot >= TS_POT.length ? 'A tarifa social só existe para potências contratadas até 6,9 kVA.' : 'Nenhuma oferta cumpre estes filtros para ' + potTxt(POTS[S.pot]) + '. Tira um filtro ou muda a tarifa.') + '</div>') +
       (lst.length > vis.length ? '<div class="dp-more"><button type="button" class="dp-btn is-secondary" id="elMore">Mostrar mais ' + Math.min(10, lst.length - vis.length) + ' de ' + (lst.length - vis.length) + '</button></div>' : '')
       : '<div class="dp-empty el-vazio">' + ico(IC.wave) + '<b>' + S.data.ofertas.length + ' ofertas de ' + Object.keys(S.data.ofertas.reduce(function (m, o) { m[o.c] = 1; return m; }, {})).length + ' comercializadores</b> à espera do teu consumo. Preenche os dados e carrega em "Comparar ofertas". Se carregares a fatura, comparamos logo.</div>') +
       '<p class="dp-foot">Preços de todas as ofertas de eletricidade para clientes domésticos comunicadas pelos comercializadores à <a href="https://simuladorprecos.erse.pt/" target="_blank" rel="noopener">ERSE</a>, atualizados a ' + dataPT(S.data.atualizado) + ', para Portugal continental. Ficam de fora os pacotes de eletricidade com gás. ' +
       'A fatura inclui energia, potência, IVA, imposto especial de consumo, contribuição audiovisual e taxa de exploração da DGEG (0,07€ por mês mais IVA). Segue a metodologia do simulador de preços da ERSE, que não conta esta taxa. Quando uma oferta em vigor ainda não está no ficheiro da ERSE, os preços são lidos todos os dias no site do comercializador e a oferta mostra essa fonte. A fatura por mês é a média do ano (o total anual a dividir por 12), por isso uma fatura real de 30 ou 31 dias pode diferir alguns cêntimos. Quando o consumo vem de uma única fatura, lembra-te de que um mês de inverno ou de verão pode estar longe da média do ano. ' +
-      'Nas tarifas indexadas, a fatura é uma estimativa: os preços comunicados à ERSE são ajustados ao preço médio do mercado grossista (<a href="https://www.omie.es/pt/market-results/daily/daily-market/day-ahead-price" target="_blank" rel="noopener">OMIE</a>) dos últimos 30 dias, por período horário. A fatura real sobe e desce com o mercado todos os meses. Com o botão "Só tarifas de preço fixo" ficam de fora. ' +
+      'Nas tarifas indexadas, a fatura é uma estimativa: os preços comunicados à ERSE são ajustados ao preço médio do mercado grossista (<a href="https://www.omie.es/pt/market-results/daily/daily-market/day-ahead-price" target="_blank" rel="noopener">OMIE</a>) dos últimos 30 dias, por período horário. A fatura real sobe e desce com o mercado todos os meses. Por defeito ficam de fora; o botão "Só preço fixo" mostra-as. ' +
       'Com a opção "Tenho tarifa social", os preços levam o <a href="https://www.erse.pt/media/02gh5y04/tarifa-social-eletricidade-jan2026.pdf" target="_blank" rel="noopener">desconto fixado pela ERSE para 2026</a> (33,8% sobre a tarifa regulada), a isenção do imposto especial de consumo e a contribuição audiovisual reduzida. Os descontos de novo cliente valem só no primeiro ano. Confirma sempre as condições no site do comercializador antes de mudares.</p>';
   }
 
@@ -692,7 +698,7 @@
   /* ---------- Arranque ---------- */
   /* ---------- Estado no URL (link partilhavel) ---------- */
   var URL_KEYS = { val: 'valor', un: 'unid', pot: 'pot', tar: 'tarifa', vz: 'vazio', pt: 'ponta', ci: 'ciclo', meu: 'meuId', com: 'com', ver: 'ver', ord: 'sort' };
-  var URL_BOOL = { fam: 'fam', soc: 'social', novo: 'novo', fixo: 'idx' };
+  var URL_BOOL = { fam: 'fam', soc: 'social', novo: 'novo', idx: 'idx' };
   /* ---------- Fatura em PDF ---------- */
   var fatLib = null;
   function carregarFatura() {
@@ -814,6 +820,7 @@
     F.tarifa = temRep || !r.tarifa ? 'auto' : r.tarifa;
     if (r.ciclo) F.ciclo = r.ciclo;
     F.meuCom = ''; F.meuId = '';
+    if (r.indexada) S.idx = true; /* quem ja tem preco indexado quer ver as indexadas na comparacao */
     var existe = S.data.ofertas.some(function (o) { return o.c === r.com; });
     if (r.com && existe) {
       F.meuCom = r.com;
@@ -967,7 +974,7 @@
     if (q.com && /^[\w ]{1,30}$/.test(q.com)) S.com = q.com;
     if (q.ver === 'todas') S.ver = 'todas';
     if (q.ord === 'energia' || q.ord === 'potencia' || q.ord === 'nome') S.sort = q.ord;
-    S.fam = q.fam === '1'; S.social = q.soc === '1'; S.novo = q.novo !== '0'; S.idx = q.fixo !== '1';
+    S.fam = q.fam === '1'; S.social = q.soc === '1'; S.novo = q.novo !== '0'; S.idx = q.idx === '1'; /* por defeito so preco fixo; fixo=1 (links antigos) e o mesmo */
     S.on = {}; String(q.f || '').split(',').forEach(function (k) { if (FILTROS.some(function (x) { return x.k === k; })) S.on[k] = true; });
     if (S.tarifa !== 'auto' || S.fam || S.social || Object.keys(S.on).length) S.mais = true;
     sincronizarF(); return true;
@@ -984,7 +991,7 @@
     if (S.com) p.push('com=' + encodeURIComponent(S.com));
     if (S.ver === 'todas') p.push('ver=todas');
     if (S.sort !== 'total') p.push('ord=' + S.sort);
-    if (S.fam) p.push('fam=1'); if (S.social) p.push('soc=1'); if (!S.novo) p.push('novo=0'); if (!S.idx) p.push('fixo=1');
+    if (S.fam) p.push('fam=1'); if (S.social) p.push('soc=1'); if (!S.novo) p.push('novo=0'); if (S.idx) p.push('idx=1');
     var f = Object.keys(S.on).filter(function (k) { return S.on[k]; }); if (f.length) p.push('f=' + f.join(','));
     return location.origin + location.pathname + '?' + p.join('&');
   }

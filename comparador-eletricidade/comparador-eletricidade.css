@@ -178,3 +178,6 @@
 /* Botao "Ir para a ..." com nomes longos: quebra a linha em vez de cortar o texto */
 #lf-dp .dp-c-cta .dp-btn{white-space:normal;height:auto;min-height:44px;line-height:1.25;text-align:center;overflow:visible;text-overflow:clip;max-width:100%;padding-top:10px;padding-bottom:10px;overflow-wrap:anywhere}
 #lf-dp .dp-c-cta{min-width:0}
+
+#lf-dp .el-idx-nota{margin:8px 0 14px;font-size:13.5px;line-height:1.45;color:var(--text-secondary)}
+#lf-dp .el-idx-nota.is-on{padding:10px 12px;border-radius:var(--radius-md);background:var(--bg-tertiary);border:1px solid var(--border-secondary);color:var(--text-primary)}
