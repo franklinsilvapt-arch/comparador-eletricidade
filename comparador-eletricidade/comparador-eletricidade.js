@@ -37,7 +37,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006o';
+  var VERSAO = '20261006p';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -77,12 +77,9 @@
   var TARIFAS = { s: 'Simples', b: 'Bi-horária', t: 'Tri-horária' };
 
   var FILTROS = [
-    { k: 'semFid', i: 'unl', l: 'Sem fidelização', f: function (o) { return o.f.charAt(0) === '0'; } },
     { k: 'semServ', i: 'wal', l: 'Sem serviços adicionais', f: function (o) { return o.f.charAt(4) === '0'; } },
-    { k: 'semCond', i: 'usr', l: 'Sem condições de acesso', f: function (o) { return o.f.charAt(2) === '0'; } },
-    { k: 'verde', i: 'leaf', l: '100% renovável', f: function (o) { return o.f.charAt(1) === '1'; } },
-    { k: 'mb', i: 'card', l: 'Sem débito direto obrigatório', f: function (o) { return !o.pg || o.pg !== '100'; } },
-    { k: 'papel', i: 'doc', l: 'Fatura em papel', f: function (o) { return !o.ft || o.ft.charAt(1) === '1'; } }
+    { k: 'semCond', i: 'usr', l: 'Sem restrições de adesão', f: function (o) { return o.f.charAt(2) === '0'; } },
+    { k: 'mb', i: 'card', l: 'Sem débito direto obrigatório', f: function (o) { return !o.pg || o.pg !== '100'; } }
   ];
 
   var S = {
@@ -289,7 +286,7 @@
     if (o.f.charAt(7) === '1') t.push('<span class="dp-tag is-warn">Só novos clientes</span>');
     if (o.f.charAt(0) === '1') t.push('<span class="dp-tag is-warn">Fidelização</span>');
     if (o.f.charAt(4) === '1') t.push('<span class="dp-tag is-warn">Serviços adicionais</span>');
-    if (o.f.charAt(2) === '1') t.push('<span class="dp-tag">Condições de acesso</span>');
+    if (o.f.charAt(2) === '1') t.push('<span class="dp-tag">Restrições de adesão</span>');
     if (o.f.charAt(1) === '1') t.push('<span class="dp-tag">100% renovável</span>');
     if (o.src === 'site') t.push('<span class="dp-tag">Preço do site da empresa</span>');
     if (o.id === S.meuId) t.push('<span class="dp-tag is-warn">O teu tarifário atual</span>');
@@ -410,7 +407,7 @@
     if (o.f.charAt(3) === '1') notas.push(notaIndexada(o, r));
     if (o.to) notas.push('<b>A oferta.</b> ' + esc(o.to));
     if (o.f.charAt(0) === '1' && o.tfi) notas.push('<b>Fidelização.</b> ' + esc(o.tfi));
-    if (o.tr || o.dr) notas.push('<b>Condições de acesso.</b> ' + esc([o.tr, o.dr].filter(Boolean).join(' ')));
+    if (o.tr || o.dr) notas.push('<b>Restrições de adesão.</b> ' + esc([o.tr, o.dr].filter(Boolean).join(' ')));
     if (o.ts || o.tos) notas.push('<b>Serviços adicionais.</b> ' + esc([o.ts, o.tos].filter(Boolean).join(' ')));
     if (o.trb) notas.push('<b>Descontos e reembolsos.</b> ' + esc(o.trb));
     if (o.ob) notas.push('<b>Outros benefícios.</b> ' + esc(o.ob));
