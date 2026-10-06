@@ -35,7 +35,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006d';
+  var VERSAO = '20261006e';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -509,8 +509,9 @@
     }
     var banner = '';
     if (S.calculado && res.melhor) {
-      var nMais = meu ? res.todos.filter(function (it) { return it.r.total < meu.r.total - 0.5; }).length : 0;
-      banner = '<p class="el-banner">' + (meu && nMais ? '🎉 Encontrámos <b>' + nMais + '</b> ofertas mais baratas do que a tua ↓' : 'Encontrámos <b>' + res.nOfertas + '</b> ofertas para o teu consumo ↓') + '</p>';
+      var refTot = meu ? meu.r.total : (eurM ? S.eurIn * 12 : null);
+      var nMais = refTot ? res.todos.filter(function (it) { return it.r.total < refTot - 0.5; }).length : 0;
+      banner = '<p class="el-banner">' + (refTot && nMais ? '🎉 Encontrámos <b>' + nMais + '</b> ofertas mais baratas do que a tua ↓' : 'Encontrámos <b>' + res.nOfertas + '</b> ofertas para o teu consumo ↓') + '</p>';
     }
     root.innerHTML = cabecalho() + (faixa ? faixa + ANALISE : '') +
       (faixa ? '' : '<div class="dp-card is-open"><button type="button" class="dp-card-toggle" data-cardtoggle aria-expanded="true"' + (S.calculado ? '' : ' disabled') + '><span><span class="dp-card-toggle-t">Consumo, potência e tarifa</span><span class="dp-card-toggle-s">' + resumo + '</span></span>' + (S.calculado ? CARET : '') + '</button>' +
@@ -787,8 +788,14 @@
   var ANALISE = '';
   /* Texto curto sobre a situacao da pessoa face ao mercado, quando ha fatura lida e base conhecida */
   function analiseFatura(res, meu) {
-    if (!S.calculado || !S.fat || !S.fat.r || !meu || !res.melhor) return '';
+    if (!S.calculado || !S.fat || !S.fat.r || !res.melhor) return '';
     var r = S.fat.r, m = res.melhor, itens = [];
+    /* Sem tarifario reconhecido (ex.: indexada), a referencia e o que a fatura diz que a pessoa paga, com os precos lidos */
+    if (!meu && S.eurIn > 0 && S.eurTocado) {
+      var pe0 = r.precoEnergia && r.precoEnergia.length ? r.precoEnergia[r.precoEnergia.length - 1] : null;
+      meu = { o: { id: 'EUR', n: 'a tua fatura' }, r: { mes: S.eurIn, total: S.eurIn * 12, k: r.tarifa || 's', p: pe0 && r.precoPotencia ? [r.precoPotencia, pe0] : null, potencia: r.precoPotencia ? r.precoPotencia * 365.25 : 0 } };
+    }
+    if (!meu) return '';
     var difMes = (meu.r.total - m.r.total) / 12, cheaper = res.todos.filter(function (it) { return it.r.total < meu.r.total - 0.5; }).length;
     var big, sub;
     if (difMes >= 1) {
@@ -801,7 +808,7 @@
     /* energia vs potencia */
     if (meu.r.p && m.r.p && meu.r.k === m.r.k) {
       var dE = (meu.r.p[1] - m.r.p[1]) * S.kwhMes, dP = (meu.r.p[0] - m.r.p[0]) * 365.25 / 12;
-      if (dE > 0.5) itens.push(['bolt', '<b>Energia:</b> pagas ' + num(meu.r.p[1], 4) + '€ por kWh. A oferta mais barata cobra ' + num(m.r.p[1], 4) + '€ (' + eur(dE) + ' por mês de diferença, sem IVA).']);
+      if (dE > 0.5) itens.push(['bolt', '<b>Energia:</b> pagas ' + num(meu.r.p[1], 4) + '€ por kWh' + (r.indexada ? ' (preço indexado, muda todos os meses)' : '') + '. A oferta mais barata cobra ' + num(m.r.p[1], 4) + '€ (' + eur(dE) + ' por mês de diferença, sem IVA).']);
       else if (dE < -0.5) itens.push(['bolt', '<b>Energia:</b> o teu preço do kWh (' + num(meu.r.p[1], 4) + '€) já é mais baixo do que o da oferta mais barata (' + num(m.r.p[1], 4) + '€). A diferença está na potência.']);
       if (dP > 0.5 && dP >= dE) itens.push(['slid', '<b>Potência:</b> pagas ' + num(meu.r.p[0], 4) + '€ por dia contra ' + num(m.r.p[0], 4) + '€ na oferta mais barata (' + eur(dP) + ' por mês, sem IVA).']);
     }
