@@ -35,7 +35,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006e';
+  var VERSAO = '20261006f';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -505,13 +505,14 @@
       else if (meu) itensF.push('<span class="el-strip-s">O teu tarifário:</span> ' + esc(meu.o.n));
       else if (S.eurIn > 0 && S.eurTocado && S.kwhIn > 0) itensF.push('<b>' + eurInt(S.eurIn) + '</b> <span class="el-strip-s">pagos por mês</span>');
       faixa = '<div class="el-strip"><span class="el-strip-t">' + (fr0 ? 'A tua fatura' : 'A tua simulação') + '</span>' + itensF.map(function (x) { return '<span class="el-strip-i">' + x + '</span>'; }).join('') +
-        '<button type="button" class="el-strip-b" data-cardtoggle>' + (fr0 ? 'Afinar a simulação' : 'Alterar os dados') + '</button>' + (fr0 ? '<button type="button" class="el-strip-b" data-fatura>Carregar outra fatura</button>' : '') + '</div>';
+        '<span class="el-strip-acts"><button type="button" class="el-strip-b" data-cardtoggle>' + (fr0 ? 'Afinar a simulação' : 'Alterar os dados') + '</button>' + (fr0 ? '<button type="button" class="el-strip-b" data-fatura>Carregar outra fatura</button>' : '') + '</span></div>';
     }
     var banner = '';
     if (S.calculado && res.melhor) {
       var refTot = meu ? meu.r.total : (eurM ? S.eurIn * 12 : null);
       var nMais = refTot ? res.todos.filter(function (it) { return it.r.total < refTot - 0.5; }).length : 0;
-      banner = '<p class="el-banner">' + (refTot && nMais ? '🎉 Encontrámos <b>' + nMais + '</b> ofertas mais baratas do que a tua ↓' : 'Encontrámos <b>' + res.nOfertas + '</b> ofertas para o teu consumo ↓') + '</p>';
+      var soMelhor = S.ver !== 'todas' && !S.com;
+      banner = '<p class="el-banner">' + (refTot && nMais ? '🎉 Há <b>' + nMais + '</b> ofertas mais baratas do que a tua' : 'Há <b>' + res.nOfertas + '</b> ofertas para o teu consumo') + (soMelhor ? '. Mostramos a melhor de cada comercializador ↓' : ' ↓') + '</p>';
     }
     root.innerHTML = cabecalho() + (faixa ? faixa + ANALISE : '') +
       (faixa ? '' : '<div class="dp-card is-open"><button type="button" class="dp-card-toggle" data-cardtoggle aria-expanded="true"' + (S.calculado ? '' : ' disabled') + '><span><span class="dp-card-toggle-t">Consumo, potência e tarifa</span><span class="dp-card-toggle-s">' + resumo + '</span></span>' + (S.calculado ? CARET : '') + '</button>' +
@@ -800,10 +801,10 @@
     var big, sub;
     if (difMes >= 1) {
       big = 'Podes poupar ' + eurInt(difMes * 12) + ' por ano';
-      sub = 'Pagas <b>' + eur(meu.r.mes) + '</b> por mês. Na ' + esc(nomeDe(m.o.c)) + ' pagavas <b>' + eur(m.r.mes) + '</b>: <b>' + eur(difMes) + '</b> a menos por mês.';
+      sub = 'A tua fatura é de <b>' + eur(meu.r.mes) + '</b> por mês' + (meu.o.id === 'FATURA' ? ' aos preços do teu tarifário' : '') + '. Com a oferta mais barata, da ' + esc(nomeDe(m.o.c)) + ', ficaria em <b>' + eur(m.r.mes) + '</b>, menos <b>' + eur(difMes) + '</b> por mês.';
     } else {
       big = 'Já estás perto do melhor preço';
-      sub = 'Pagas <b>' + eur(meu.r.mes) + '</b> por mês e a oferta mais barata fica em ' + eur(m.r.mes) + '. Mudar dava pouco.';
+      sub = 'A tua fatura é de <b>' + eur(meu.r.mes) + '</b> por mês e a oferta mais barata fica em ' + eur(m.r.mes) + '. Mudar dava pouco.';
     }
     /* energia vs potencia */
     if (meu.r.p && m.r.p && meu.r.k === m.r.k) {

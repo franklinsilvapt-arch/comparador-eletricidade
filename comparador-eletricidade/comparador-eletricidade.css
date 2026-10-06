@@ -131,13 +131,13 @@
 #lf-dp .el-strip-i{display:inline-flex;align-items:center;gap:8px}
 #lf-dp .el-strip-i .dp-logo{width:26px;height:26px;flex:0 0 26px}
 #lf-dp .el-strip-s{color:var(--text-quaternary)}
-#lf-dp .el-strip-b{margin-left:auto;border:0;background:none;padding:0;font:inherit;font-size:14px;font-weight:500;color:var(--colors--brand-600, #f03406);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-#lf-dp .el-strip-b+.el-strip-b{margin-left:0}
+#lf-dp .el-strip-acts{margin-left:auto;display:inline-flex;gap:18px;white-space:nowrap}
+#lf-dp .el-strip-b{border:0;background:none;padding:0;font:inherit;font-size:14px;font-weight:500;color:var(--colors--brand-600, #f03406);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 /* Analise da fatura */
 #lf-dp .el-anl{margin:0 0 14px;padding:20px 22px;border:1px solid var(--border-secondary);border-radius:var(--radius-xl);background:#fff;text-align:left}
 #lf-dp .el-anl-h{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-#lf-dp .el-anl-k{font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text-quaternary)}
-#lf-dp .el-anl-big{font-size:28px;line-height:34px;font-weight:700;color:var(--text-primary);margin:4px 0 6px}
+#lf-dp .el-anl-k{font-family:"Tiempos Headline",Georgia,serif;font-size:22px;line-height:28px;font-weight:300;color:var(--text-primary)}
+#lf-dp .el-anl-big{font-size:30px;line-height:36px;font-weight:700;letter-spacing:-.01em;color:var(--text-primary);margin:6px 0 8px}
 #lf-dp .el-anl-big.is-pos{color:var(--colors--text-success-700, #067647)}
 #lf-dp .el-anl-sub{margin:0;font-size:15px;line-height:22px;color:var(--text-secondary)}
 #lf-dp .el-anl-sub b{color:var(--text-primary)}
@@ -159,7 +159,7 @@
   #lf-dp .dp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   #lf-dp .el-strip{gap:6px 14px}
   #lf-dp .el-strip-t{border:0;padding:0;width:100%}
-  #lf-dp .el-strip-b{margin-left:0}
+  #lf-dp .el-strip-acts{margin-left:0;flex-wrap:wrap;white-space:normal}
   #lf-dp .el-anl{padding:16px}
   #lf-dp .el-anl-big{font-size:24px;line-height:30px}
   #lf-dp .el-anl-ico{display:none}
