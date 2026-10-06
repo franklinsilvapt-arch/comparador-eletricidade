@@ -32,8 +32,10 @@
   var PERDAS = 1.16;
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
+  /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
+  var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261005p';
+  var VERSAO = '20261006a';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -488,7 +490,7 @@
       '<div class="dp-card-body"><div class="el-vias">' +
       '<section class="el-via el-via-pdf"><div class="el-via-h"><span class="el-via-t">Carregar a fatura em PDF</span><span class="el-via-s">Lemos o consumo, a potência, a tarifa e o que pagas hoje.</span></div>' +
       zonaFatura() +
-      '<input type="file" id="elFatura" accept="application/pdf,.pdf" class="el-fat-in" tabindex="-1" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none">' +
+      '<input type="file" id="elFatura" accept="application/pdf,.pdf,image/jpeg,image/png,image/webp" class="el-fat-in" tabindex="-1" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none">' +
       '</section>' +
       '<div class="el-ou" aria-hidden="true"><span>ou</span></div>' +
       '<section class="el-via el-via-mao"><div class="el-via-h"><span class="el-via-t">Preencher à mão</span></div>' +
@@ -541,6 +543,7 @@
     if (t.closest('[data-comparar]')) { comparar(); return; }
     if (t.closest('[data-fatura]')) { var fi = document.getElementById('elFatura'); if (fi) fi.click(); return; }
     if (t.closest('[data-fat-fechar]')) { S.fat = null; render(); return; }
+    if (t.closest('[data-ai]')) { lerComAI(); return; }
     var a = t.closest('[data-tarifa]');
     if (a) { if (a.disabled) return; F.tarifa = a.getAttribute('data-tarifa'); S.visible = 10; render(); return; }
     var p = t.closest('[data-perfil]');
@@ -643,19 +646,67 @@
     });
     return fatLib;
   }
+  var ficheiroFatura = null; /* ultimo ficheiro escolhido, para a leitura por AI se a pessoa aceitar */
+  function ehImagem(file) { return /^image\/(jpeg|png|webp)$/.test(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name); }
   function lerFatura(file) {
-    if (!/pdf$/i.test(file.name) && file.type !== 'application/pdf') { S.fat = { erro: 'Só conseguimos ler faturas em PDF. Descarrega a fatura eletrónica na área de cliente do teu comercializador.' }; render(); return; }
+    var pdf = /pdf$/i.test(file.name) || file.type === 'application/pdf';
+    if (!pdf && !ehImagem(file)) { S.fat = { erro: 'Só conseguimos ler faturas em PDF ou fotografias (JPG, PNG). Descarrega a fatura eletrónica na área de cliente do teu comercializador.' }; render(); return; }
     if (file.size > 15 * 1024 * 1024) { S.fat = { erro: 'O ficheiro é demasiado grande (máximo 15 MB).' }; render(); return; }
+    ficheiroFatura = file;
+    if (!pdf) { S.fat = { erro: 'Uma fotografia só se lê com AI.', podeAI: true, motivoAI: 'foto' }; render(); return; }
     S.fat = { aLer: true }; render();
     carregarFatura().then(function (L) { return L.ler(file); }).then(aplicarFatura).catch(function (e) {
-      S.fat = { erro: (e && e.message) || 'Não conseguimos ler esta fatura.' }; render();
+      S.fat = { erro: (e && e.message) || 'Não conseguimos ler esta fatura.', podeAI: true }; render();
     });
+  }
+  /* Fotografias: reduz para 1600 px e JPEG, para caber nos 3 MB do servico */
+  function paraBase64(file) {
+    return new Promise(function (ok, ko) {
+      if (!ehImagem(file)) {
+        var fr = new FileReader(); fr.onload = function () { ok({ mime: 'application/pdf', dados: String(fr.result).split(',')[1] }); }; fr.onerror = function () { ko(new Error('Não foi possível ler o ficheiro.')); }; fr.readAsDataURL(file); return;
+      }
+      var img = new Image(), urlObj = URL.createObjectURL(file);
+      img.onload = function () {
+        var esc0 = Math.min(1, 1600 / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * esc0); cv.height = Math.round(img.height * esc0);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(urlObj);
+        ok({ mime: 'image/jpeg', dados: cv.toDataURL('image/jpeg', 0.85).split(',')[1] });
+      };
+      img.onerror = function () { URL.revokeObjectURL(urlObj); ko(new Error('Não foi possível abrir a imagem.')); };
+      img.src = urlObj;
+    });
+  }
+  var ERROS_AI = { tipo: 'Este tipo de ficheiro não é aceite. Usa PDF, JPG ou PNG.', grande: 'O ficheiro é demasiado grande para a leitura por AI (máximo cerca de 3 MB). Tenta uma fotografia mais pequena ou o PDF da área de cliente.', limite: 'Muitos pedidos seguidos. Espera um minuto e tenta outra vez.', servico: 'A leitura por AI não está disponível neste momento. Preenche os dados à mão.', pedido: 'Não foi possível enviar a fatura. Tenta outra vez.' };
+  function lerComAI() {
+    var file = ficheiroFatura; if (!file) return;
+    S.fat = { aLer: true, ai: true }; render();
+    paraBase64(file).then(function (b) {
+      if (b.dados.length > 4.2 * 1024 * 1024) throw new Error(ERROS_AI.grande);
+      return fetch(AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function (resp) {
+        return resp.json().catch(function () { return { erro: 'servico' }; }).then(function (j) { if (!resp.ok || j.erro) throw new Error(ERROS_AI[j.erro] || ERROS_AI.servico); return j; });
+      });
+    }).then(function (j) {
+      if (j.e_fatura_eletricidade === false) throw new Error('Este documento não parece uma fatura de eletricidade.');
+      var kwh = j.kwh_total, dias = j.dias, r = {
+        avisos: [], ai: true, com: j.comercializador && j.comercializador !== 'OUTRO' ? j.comercializador : null, comNome: j.comercializador_nome || null,
+        pot: j.potencia_kva || null, tarifa: j.opcao_horaria === 'bi-horaria' ? 'b' : j.opcao_horaria === 'tri-horaria' ? 't' : j.opcao_horaria === 'simples' ? 's' : null,
+        ciclo: null, dias: dias || null, kwh: kwh != null ? Math.round(kwh) : null, kwhMes: kwh && dias ? Math.round(kwh / dias * 365.25 / 12) : null,
+        precoEnergia: j.preco_kwh ? [j.preco_kwh] : [], precoPotencia: j.preco_potencia_dia || null, plano: j.tarifario || null,
+        indexada: false, descontoPct: 0, redesSeparadas: false, totalMes: j.total_eletricidade_eur && dias ? Math.round(j.total_eletricidade_eur / dias * 365.25 / 12 * 100) / 100 : null
+      };
+      if (kwh && j.kwh_vazio != null) { r.vazioPct = Math.round(j.kwh_vazio / kwh * 100); if (j.kwh_ponta != null) r.pontaPct = Math.round(j.kwh_ponta / kwh * 100); }
+      if (!r.pot) r.avisos.push('potência contratada');
+      if (!r.kwhMes) r.avisos.push(r.kwh ? 'dias do período de faturação' : 'consumo em kWh');
+      aplicarFatura(r);
+    }).catch(function (e) { S.fat = { erro: (e && e.message) || ERROS_AI.servico }; render(); });
   }
   function maisPerto(lista, v) { var best = lista[0]; lista.forEach(function (x) { if (Math.abs(x - v) < Math.abs(best - v)) best = x; }); return best; }
   function aplicarFatura(r) {
     var f = { r: r, lidos: [], faltas: r.avisos.slice(), meu: null };
     if (r.pot) { var pi = POTS.indexOf(maisPerto(POTS, r.pot)); if (pi >= 0) F.pot = pi; }
     if (r.kwhMes) { F.kwhIn = r.kwhMes; F.eurIn = null; F.perfil = null; }
+    if (r.totalMes) { F.eurIn = r.totalMes; F.eurTocado = true; }
     atualizarConsumo();
     var temRep = r.vazioPct != null;
     if (temRep) {
@@ -693,15 +744,17 @@
         S.meuFat = virt; F.meuId = 'FATURA'; f.virt = linha;
       }
     }
+    f.podeAI = !r.ai && (!r.kwhMes || !r.pot);
     S.fat = f; S.mais = S.mais || temRep || (r.tarifa && r.tarifa !== 's');
     comparar(true);
   }
   function zonaFatura() {
     var f = S.fat;
-    if (f && f.aLer) return '<div class="el-drop is-busy"><div class="el-drop-i">' + ico(IC.doc) + '</div><p class="el-drop-t">A ler a fatura…</p></div>';
+    if (f && f.aLer) return '<div class="el-drop is-busy"><div class="el-drop-i">' + ico(IC.doc) + '</div><p class="el-drop-t">' + (f.ai ? 'A ler a fatura com AI… pode demorar uns segundos.' : 'A ler a fatura…') + '</p></div>';
     if (f && (f.erro || f.r)) return resumoFatura() + '<button type="button" class="el-fat-outra" data-fatura>' + ico(IC.doc) + 'Carregar outra fatura</button>';
     return '<div class="el-drop" data-fatura role="button" tabindex="0" aria-label="Carregar a fatura em PDF"><div class="el-drop-i">' + ico(IC.doc) + '</div>' +
       '<p class="el-drop-t">Arrasta a fatura para aqui ou <span class="el-drop-l">escolhe o ficheiro</span></p>' +
+      '<p class="el-drop-s">PDF da área de cliente. Fotografias também, com leitura por AI.</p>' +
       '<p class="el-drop-p">' + ico(IC.lock) + 'É lida no teu browser e não sai do teu computador.</p></div>';
   }
   var ANALISE = '';
@@ -731,11 +784,15 @@
     }
     return '<div class="el-anl"><div class="el-anl-t">Análise da tua fatura</div>' + p.map(function (x) { return '<p>' + x + '</p>'; }).join('') + '</div>';
   }
+  function blocoAI(f) {
+    return '<div class="el-ai"><p>' + (f.motivoAI === 'foto' ? 'Fotografias não se leem no browser. ' : 'Não conseguimos ler esta fatura no teu browser. ') + 'Queres tentar com AI? A fatura é enviada para ser lida e <b>não fica guardada</b>.</p>' +
+      '<button type="button" class="dp-irs-b el-ai-b" data-ai>' + ico(IC.wave) + 'Tentar com AI</button></div>';
+  }
   function resumoFatura() {
     var f = S.fat;
     if (!f || f.aLer) return '';
-    if (f.erro) return '<div class="el-fat-res is-erro"><p>' + esc(f.erro) + '</p><button type="button" class="el-fat-x" data-fat-fechar aria-label="Fechar">×</button></div>';
-    var r = f.r, com = r.com ? nomeDe(r.com) : null;
+    if (f.erro) return '<div class="el-fat-res is-erro"><p>' + esc(f.erro) + '</p>' + (f.podeAI ? blocoAI(f) : '') + '<button type="button" class="el-fat-x" data-fat-fechar aria-label="Fechar">×</button></div>';
+    var r = f.r, com = r.com ? nomeDe(r.com) : (r.comNome || null);
     var dataCurta = function (iso) { var M = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']; var q = String(iso || '').split('-'); return q.length === 3 ? parseInt(q[2], 10) + ' ' + M[parseInt(q[1], 10) - 1] : ''; };
     var tile = function (l, v, sub) { return '<div class="el-ft"><div class="el-ft-l">' + l + '</div><div class="el-ft-v">' + v + '</div>' + (sub ? '<div class="el-ft-s">' + sub + '</div>' : '') + '</div>'; };
     var tiles = '';
@@ -753,7 +810,9 @@
     else if (r.indexada) h += '<p>Tens um tarifário indexado, com preço que muda todos os meses, por isso não dá para o reconhecer pelos preços. Para a poupança ser face ao que pagas, põe ao lado o valor da fatura em euros.</p>';
     else if (F.meuCom) h += '<p>Não reconhecemos o tarifário' + (r.plano ? ' "' + esc(r.plano) + '"' : '') + ' pelos preços. Escolhe-o em baixo, se o encontrares, para a poupança ser face ao que pagas.</p>';
     else if (com) h += '<p>A ' + esc(com) + ' não tem ofertas no comparador neste momento, por isso a poupança é face ao mercado regulado.</p>';
-    if (f.faltas.length) h += '<p>Não encontrámos na fatura: <b>' + esc(f.faltas.join(', ')) + '</b>. Preenche ao lado.</p>';
+    if (f.faltas.length) h += '<p>Não encontrámos na fatura: <b>' + esc(f.faltas.join(', ')) + '</b>.' + (f.podeAI ? '' : ' Preenche ao lado.') + '</p>';
+    if (f.podeAI) h += blocoAI(f);
+    if (r.ai) h += '<p class="el-fat-nota">Lida com AI. Confirma os valores antes de comparar.</p>';
     return '<div class="el-fat-res">' + h + ANALISE + '<button type="button" class="el-fat-x" data-fat-fechar aria-label="Fechar">×</button></div>';
   }
 
