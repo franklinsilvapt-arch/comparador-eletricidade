@@ -36,7 +36,7 @@ Qualquer falha de leitura deixa essa oferta de fora e faz o workflow terminar co
 
 A ERSE calcula os preços das ofertas indexadas com um preço OMIE de referência (a média dos futuros para os próximos 3 meses, indicada no texto da ERSE e guardada em `omie_ref` no `ofertas.json`, em EUR/MWh). O comparador ajusta esses preços ao OMIE real: `preço = preço ERSE + PERDAS × (OMIE do período − referência)`, com `PERDAS = 1,16` (coeficiente médio de perdas em BTN usado nas fórmulas dos comercializadores).
 
-O `omie.py` lê todos os dias os ficheiros oficiais do OMIE (`marginalpdbcpt_AAAAMMDD.1`, preço de 15 em 15 minutos para Portugal) e escreve `data/omie.json` com a média dos últimos 30 dias e as médias por período horário (fora de vazio e vazio, ponta, cheias e vazio) nos ciclos diário e semanal, segundo os períodos horários da ERSE em hora legal. Os preços brutos ficam em cache em `data/omie_qh.json`. Sem `omie.json`, o comparador mostra a estimativa da ERSE.
+Os ficheiros do OMIE estão em hora espanhola (uma hora à frente de Portugal): o `omie.py` passa-os para hora legal portuguesa antes de os repartir pelos períodos horários. O `omie.py` lê todos os dias os ficheiros oficiais do OMIE (`marginalpdbcpt_AAAAMMDD.1`, preço de 15 em 15 minutos para Portugal) e escreve `data/omie.json` com a média dos últimos 30 dias e as médias por período horário (fora de vazio e vazio, ponta, cheias e vazio) nos ciclos diário e semanal, segundo os períodos horários da ERSE em hora legal. Os preços brutos ficam em cache em `data/omie_qh.json`. Sem `omie.json`, o comparador mostra a estimativa da ERSE.
 
 ## Cálculo da fatura
 
@@ -79,3 +79,13 @@ Formatos testados: EDP Comercial, Endesa e G9 Energy (indexada). Faturas digital
 ### Leitura por AI (segunda tentativa)
 
 Quando o leitor do browser não encontra o consumo ou a potência, ou quando o ficheiro é uma fotografia (JPG, PNG, WebP), a página pergunta "Queres tentar com AI? A fatura é enviada para ser lida e não fica guardada". Só depois do clique o ficheiro é enviado, em base64, para `https://lf-site-assets-leitor-fatura.vercel.app/api/ler` (função do Vercel mantida no repositório pedrofintech/lf-site-assets, `leitor-fatura/api/ler.js`, modelo Claude Haiku). Fotografias são reduzidas a 1600 px e JPEG antes de enviar. A resposta (comercializador, potência, opção horária, dias, kWh por período, preços e total) é convertida para o mesmo formato do leitor local e preenche o formulário, com a nota "Lida com AI. Confirma os valores antes de comparar". O total da eletricidade preenche "Quanto pagas por mês" (normalizado a 30,44 dias).
+
+## Ficheiro de consumos da E-REDES (eredes.js)
+
+Na mesma zona da fatura, a pessoa pode carregar o ficheiro de consumos de 15 em 15 minutos que descarrega no [Balcão Digital da E-REDES](https://balcaodigital.e-redes.pt/home) (Excel ou CSV, até 24 meses, só com contador inteligente). O `eredes.js` lê-o no browser (o Excel com o SheetJS da cdnjs, carregado só nessa altura) e:
+
+- soma o "Consumo registado" (ou, se não existir, o "Consumo medido na IC"): os valores são kW médios de cada quarto de hora, por isso kWh = kW × 0,25, e a hora marca o fim do quarto de hora;
+- calcula o consumo anual a partir dos dias completos do ficheiro e a percentagem em vazio e em ponta nos ciclos diário e semanal, com os períodos horários da ERSE (iguais aos do `omie.py`);
+- faz um perfil médio por dia da semana e quarto de hora e usa-o para pesar os preços OMIE dos últimos 30 dias (`data/omie_qh.json`). As tarifas indexadas passam a ser calculadas com o preço do mercado nas horas em que a pessoa gasta, e não com a média simples.
+
+A potência contratada não vem no ficheiro: a pessoa escolhe-a no formulário.

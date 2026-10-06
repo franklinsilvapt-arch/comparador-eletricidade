@@ -32,10 +32,12 @@
   var PERDAS = 1.16;
   var OMIE_URL = BASE + 'data/omie.json';
   var FATURA_URL = BASE + 'fatura.js';
+  var EREDES_URL = BASE + 'eredes.js';
+  var OMIE_QH_URL = BASE + 'data/omie_qh.json';
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006k';
+  var VERSAO = '20261006l';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -322,7 +324,7 @@
   function notaIndexada(o, r) {
     var om = S.omie;
     if (!r.omie || !om) return '<b>Preço indexado.</b> O valor mostrado é a estimativa da ERSE com o preço esperado do mercado grossista para os próximos três meses' + (S.data.omie_ref ? ' (' + num(S.data.omie_ref, 2) + '€/MWh)' : '') + '. A fatura real sobe e desce com o mercado.';
-    var per = om[S.ciclo || 'd'] || {}, t = '<b>Preço indexado.</b> Estimativa com o preço médio do mercado grossista (OMIE) entre ' + dataPT(om.de) + ' e ' + dataPT(om.ate) + ': ' + num(om.media, 2) + '€/MWh';
+    var per = om[S.ciclo || 'd'] || {}, t = '<b>Preço indexado.</b> Estimativa com o preço ' + (om.perfil ? 'do mercado grossista (OMIE) pesado pelo teu consumo de 15 em 15 minutos (ficheiro da E-REDES)' : 'médio do mercado grossista (OMIE)') + ' entre ' + dataPT(om.de) + ' e ' + dataPT(om.ate) + ': ' + num(om.media, 2) + '€/MWh';
     if (r.k === 'b') t += ' (' + num(per.fv, 2) + ' fora de vazio, ' + num(per.vz, 2) + ' em vazio)';
     if (r.k === 't') t += ' (' + num(per.p, 2) + ' em ponta, ' + num(per.c, 2) + ' em cheias, ' + num(per.vz, 2) + ' em vazio)';
     var c = ctx(); c.omie = null;
@@ -443,8 +445,9 @@
       return '<button type="button" class="dp-tab' + (F.tarifa === t[0] ? ' is-active' : '') + (ok ? '' : ' el-off') + '" data-tarifa="' + t[0] + '"' + (ok ? '' : ' disabled') + '>' + t[1] + '</button>';
     }).join('');
     var op = function (v, sel, txt) { return '<option value="' + v + '"' + (sel === v ? ' selected' : '') + '>' + txt + '</option>'; };
-    var vzOpts = [10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80].map(function (v) { return op(v, F.vazio, v + '% em vazio'); }).join('');
-    var ptOpts = [10, 15, 20, 25, 30, 35].map(function (v) { return op(v, F.ponta, v + '% em ponta'); }).join('');
+    var comV = function (l, v) { return l.indexOf(v) >= 0 ? l : l.concat([v]).sort(function (a, b) { return a - b; }); };
+    var vzOpts = comV([10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80], F.vazio).map(function (v) { return op(v, F.vazio, v + '% em vazio'); }).join('');
+    var ptOpts = comV([10, 15, 20, 25, 30, 35], F.ponta).map(function (v) { return op(v, F.ponta, v + '% em ponta'); }).join('');
     var txtNum = function (v) { return v > 0 ? milhar(String(v).replace('.', ',')) : ''; };
     var pfSel = PERFIS.filter(function (p) { return p.k === F.perfil; })[0] || null;
     var perfis = PERFIS.map(function (p) {
@@ -498,16 +501,17 @@
       var fr0 = S.fat && S.fat.r ? S.fat.r : null, itensF = [];
       if (fr0) {
         var comF = fr0.com ? nomeDe(fr0.com) : (fr0.comNome || null);
-        itensF.push((fr0.com ? logo(fr0.com, comF) : '') + '<span>' + (comF ? esc(comF) : 'Fatura') + (fr0.de && fr0.ate ? ' <span class="el-strip-s">· ' + dataPT(fr0.de).replace(/ de \d{4}$/, '') + ' a ' + dataPT(fr0.ate).replace(/ de \d{4}$/, '') + '</span>' : '') + '</span>');
+        itensF.push((fr0.com ? logo(fr0.com, comF) : '') + '<span>' + (fr0.eredes ? 'Consumos E-REDES' : comF ? esc(comF) : 'Fatura') + (fr0.de && fr0.ate ? ' <span class="el-strip-s">· ' + dataPT(fr0.de).replace(/ de \d{4}$/, '') + ' a ' + dataPT(fr0.ate).replace(/ de \d{4}$/, '') + '</span>' : '') + '</span>');
       }
       itensF.push('<b>' + (S.kwhIn > 0 ? milhar(String(Math.round(S.kwhMes))) + ' kWh' : eurInt(S.eurIn)) + '</b> <span class="el-strip-s">por mês</span>');
       itensF.push('<b>' + potTxt(POTS[S.pot]) + '</b>');
       itensF.push(S.tarifa === 'auto' ? 'Tarifa mais barata' : TARIFAS[S.tarifa]);
+      if (fr0 && fr0.eredes) itensF.push('<b>' + S.vazio + '%</b> <span class="el-strip-s">em vazio</span>');
       if (meu && meu.o.id === 'FATURA' && meu.r.p) itensF.push('<b>' + num(meu.r.p[1], 4) + '€</b> <span class="el-strip-s">por kWh</span>', '<b>' + num(meu.r.p[0], 4) + '€</b> <span class="el-strip-s">por dia</span>');
       else if (meu) itensF.push('<span class="el-strip-s">O teu tarifário:</span> ' + esc(meu.o.n));
       else if (S.eurIn > 0 && S.eurTocado && S.kwhIn > 0) itensF.push('<b>' + eurInt(S.eurIn) + '</b> <span class="el-strip-s">pagos por mês</span>');
-      faixa = '<div class="el-strip"><span class="el-strip-t">' + (fr0 ? 'A tua fatura' : 'A tua simulação') + '</span>' + itensF.map(function (x) { return '<span class="el-strip-i">' + x + '</span>'; }).join('') +
-        '<span class="el-strip-acts"><button type="button" class="el-strip-b" data-cardtoggle>' + (fr0 ? 'Afinar a simulação' : 'Alterar os dados') + '</button>' + (fr0 ? '<button type="button" class="el-strip-b" data-fatura>Carregar outra fatura</button>' : '') + '</span></div>';
+      faixa = '<div class="el-strip"><span class="el-strip-t">' + (fr0 && fr0.eredes ? 'O teu consumo' : fr0 ? 'A tua fatura' : 'A tua simulação') + '</span>' + itensF.map(function (x) { return '<span class="el-strip-i">' + x + '</span>'; }).join('') +
+        '<span class="el-strip-acts"><button type="button" class="el-strip-b" data-cardtoggle>' + (fr0 ? 'Afinar a simulação' : 'Alterar os dados') + '</button>' + (fr0 ? '<button type="button" class="el-strip-b" data-fatura>' + (fr0.eredes ? 'Carregar outro ficheiro' : 'Carregar outra fatura') + '</button>' : '') + '</span></div>';
     }
     var banner = '';
     if (S.calculado && res.melhor) {
@@ -521,7 +525,7 @@
       '<div class="dp-card-body"><div class="el-vias">' +
       '<section class="el-via el-via-pdf"><div class="el-via-h"><span class="el-via-t">Carregar a fatura em PDF</span><span class="el-via-s">Lemos o consumo, a potência, a tarifa e o que pagas hoje.</span></div>' +
       zonaFatura() +
-      '<input type="file" id="elFatura" accept="application/pdf,.pdf,image/jpeg,image/png,image/webp" class="el-fat-in" tabindex="-1" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none">' +
+      '<input type="file" id="elFatura" accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" class="el-fat-in" tabindex="-1" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none">' +
       '</section>' +
       '<div class="el-ou" aria-hidden="true"><span>ou</span></div>' +
       '<section class="el-via el-via-mao"><div class="el-via-h"><span class="el-via-t">Preencher à mão</span></div>' +
@@ -573,7 +577,7 @@
     if (t.closest('[data-share]')) { partilhar(); return; }
     if (t.closest('[data-comparar]')) { comparar(); return; }
     if (t.closest('[data-fatura]')) { var fi = document.getElementById('elFatura'); if (!fi) { S.formOpen = true; render(); fi = document.getElementById('elFatura'); } if (fi) fi.click(); return; }
-    if (t.closest('[data-fat-fechar]')) { S.fat = null; render(); return; }
+    if (t.closest('[data-fat-fechar]')) { S.fat = null; limparPerfil(); render(); return; }
     if (t.closest('[data-ai]')) { lerComAI(); return; }
     var a = t.closest('[data-tarifa]');
     if (a) { if (a.disabled) return; F.tarifa = a.getAttribute('data-tarifa'); S.visible = 10; render(); return; }
@@ -632,7 +636,7 @@
     if (id === 'elPot') { F.pot = parseInt(v, 10) || 0; F.perfil = null; atualizarConsumo(); S.visible = 10; render(); }
     if (id === 'elVazio') { F.vazio = parseInt(v, 10) || 40; render(); }
     if (id === 'elPonta') { F.ponta = parseInt(v, 10) || 20; render(); }
-    if (id === 'elCiclo') { F.ciclo = v === 's' ? 's' : 'd'; render(); }
+    if (id === 'elCiclo') { F.ciclo = v === 's' ? 's' : 'd'; repartirEredes(); render(); }
     if (id === 'elVer') { S.ver = v; S.visible = 10; render(); }
     if (id === 'elCom') { S.com = v; S.visible = 10; render(); }
     if (id === 'elMeuCom') { F.meuCom = v; F.meuId = ''; render(); }
@@ -679,7 +683,46 @@
   }
   var ficheiroFatura = null; /* ultimo ficheiro escolhido, para a leitura por AI se a pessoa aceitar */
   function ehImagem(file) { return /^image\/(jpeg|png|webp)$/.test(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name); }
+  function ehEredes(file) { return /\.(xlsx|xls|csv)$/i.test(file.name) || /spreadsheet|ms-excel|text\/csv/.test(file.type); }
+  function carregarEredes() {
+    if (window.LF_EREDES) return Promise.resolve(window.LF_EREDES);
+    return new Promise(function (ok, ko) {
+      var sc = document.createElement('script'); sc.src = EREDES_URL + '?v=' + VERSAO; sc.async = true;
+      sc.onload = function () { ok(window.LF_EREDES); }; sc.onerror = function () { ko(new Error('Não foi possível carregar o leitor do ficheiro da E-REDES.')); };
+      document.head.appendChild(sc);
+    });
+  }
+  function omieQh() {
+    return fetch(OMIE_QH_URL + '?d=' + new Date().toISOString().slice(0, 10)).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+  }
+  /* Ficheiro de consumos da E-REDES (15 em 15 minutos): consumo anual, reparticao por periodo horario e OMIE pesado pelo perfil */
+  function lerEredes(file) {
+    if (file.size > 20 * 1024 * 1024) { S.fat = { erro: 'O ficheiro é demasiado grande (máximo 20 MB).' }; render(); return; }
+    S.fat = { aLer: true, eredes: true }; render();
+    carregarEredes().then(function (L) {
+      return Promise.all([L.ler(file), omieQh()]).then(function (a) { var r = a[0]; r.omie = L.omiePerfil(r, a[1]); return r; });
+    }).then(aplicarEredes).catch(function (e) { S.fat = { erro: (e && e.message) || 'Não conseguimos ler o ficheiro da E-REDES.' }; render(); });
+  }
+  function repartirEredes() {
+    var r = S.fat && S.fat.r; if (!r || !r.eredes) return;
+    var c = F.ciclo || 'd';
+    if (r.vz[c] != null) F.vazio = Math.max(5, Math.min(90, r.vz[c]));
+    if (r.pt[c] != null) F.ponta = Math.max(5, Math.min(60, r.pt[c]));
+  }
+  function aplicarEredes(r) {
+    F.kwhIn = r.kwhMes; F.eurIn = null; F.eurTocado = false; F.perfil = null;
+    atualizarConsumo();
+    F.tarifa = 'auto';
+    S.fat = { r: r, eredes: true, lidos: [], faltas: [], meu: null };
+    repartirEredes();
+    if (r.omie) { S.omiePerfil = r.omie; if (S.omie && !S.omie.perfil) S.omieBase = S.omie; S.omie = r.omie; }
+    S.mais = true;
+    comparar(true);
+  }
+  function limparPerfil() { if (S.omiePerfil) { S.omiePerfil = null; S.omie = S.omieBase || null; } }
   function lerFatura(file) {
+    if (ehEredes(file)) { lerEredes(file); return; }
+    limparPerfil();
     var pdf = /pdf$/i.test(file.name) || file.type === 'application/pdf';
     if (!pdf && !ehImagem(file)) { S.fat = { erro: 'Só conseguimos ler faturas em PDF ou fotografias (JPG, PNG). Descarrega a fatura eletrónica na área de cliente do teu comercializador.' }; render(); return; }
     if (file.size > 15 * 1024 * 1024) { S.fat = { erro: 'O ficheiro é demasiado grande (máximo 15 MB).' }; render(); return; }
@@ -781,12 +824,13 @@
   }
   function zonaFatura() {
     var f = S.fat;
-    if (f && f.aLer) return '<div class="el-drop is-busy"><div class="el-drop-i">' + ico(IC.doc) + '</div><p class="el-drop-t">' + (f.ai ? 'A ler a fatura com AI… pode demorar uns segundos.' : 'A ler a fatura…') + '</p></div>';
+    if (f && f.aLer) return '<div class="el-drop is-busy"><div class="el-drop-i">' + ico(IC.doc) + '</div><p class="el-drop-t">' + (f.ai ? 'A ler a fatura com AI… pode demorar uns segundos.' : f.eredes ? 'A ler o ficheiro da E-REDES…' : 'A ler a fatura…') + '</p></div>';
     if (f && (f.erro || f.r)) return resumoFatura() + '<button type="button" class="el-fat-outra" data-fatura>' + ico(IC.doc) + 'Carregar outra fatura</button>';
     return '<div class="el-drop" data-fatura role="button" tabindex="0" aria-label="Carregar a fatura em PDF"><div class="el-drop-i">' + ico(IC.doc) + '</div>' +
       '<p class="el-drop-t">Arrasta a fatura para aqui ou <span class="el-drop-l">escolhe o ficheiro</span></p>' +
-      '<p class="el-drop-s">PDF da área de cliente. Fotografias também, com leitura por AI.</p>' +
-      '<p class="el-drop-p">' + ico(IC.lock) + 'É lida no teu browser e não sai do teu computador.</p></div>';
+      '<p class="el-drop-s">PDF da área de cliente. Fotografias também, com leitura por AI. Ou o ficheiro de consumos da E-REDES (Excel), para contas com o teu consumo real de 15 em 15 minutos.</p>' +
+      '<p class="el-drop-p">' + ico(IC.lock) + 'É lida no teu browser e não sai do teu computador.</p></div>' +
+      '<details class="el-eredes"><summary>Como tirar o ficheiro de consumos da E-REDES?</summary><p>Entra no <a href="https://balcaodigital.e-redes.pt/home" target="_blank" rel="noopener">Balcão Digital da E-REDES</a>, abre os consumos da tua instalação, escolhe o período (até 24 meses) e descarrega em Excel. Só existe se tiveres contador inteligente ligado à rede. Com um ano completo, a simulação apanha o inverno e o verão.</p></details>';
   }
   var ANALISE = '';
   /* Texto curto sobre a situacao da pessoa face ao mercado, quando ha fatura lida e base conhecida */
@@ -837,6 +881,7 @@
     var f = S.fat;
     if (!f || f.aLer) return '';
     if (f.erro) return '<div class="el-fat-res is-erro"><p>' + esc(f.erro) + '</p>' + (f.podeAI ? blocoAI(f) : '') + '<button type="button" class="el-fat-x" data-fat-fechar aria-label="Fechar">×</button></div>';
+    if (f.r.eredes) return resumoEredes(f.r);
     var r = f.r, com = r.com ? nomeDe(r.com) : (r.comNome || null);
     var dataCurta = function (iso) { var M = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']; var q = String(iso || '').split('-'); return q.length === 3 ? parseInt(q[2], 10) + ' ' + M[parseInt(q[1], 10) - 1] : ''; };
     var tile = function (l, v, sub) { return '<div class="el-ft"><div class="el-ft-l">' + l + '</div><div class="el-ft-v">' + v + '</div>' + (sub ? '<div class="el-ft-s">' + sub + '</div>' : '') + '</div>'; };
@@ -858,6 +903,24 @@
     if (f.faltas.length) h += '<p>Não encontrámos na fatura: <b>' + esc(f.faltas.join(', ')) + '</b>.' + (f.podeAI ? '' : ' Preenche ao lado.') + '</p>';
     if (f.podeAI) h += blocoAI(f);
     if (r.ai) h += '<p class="el-fat-nota">Lida com AI. Confirma os valores antes de comparar.</p>';
+    return '<div class="el-fat-res">' + h + '<button type="button" class="el-fat-x" data-fat-fechar aria-label="Fechar">×</button></div>';
+  }
+
+  function resumoEredes(r) {
+    var M = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    var dc = function (iso) { var q = String(iso || '').split('-'); return q.length === 3 ? parseInt(q[2], 10) + ' ' + M[parseInt(q[1], 10) - 1] + ' ' + q[0] : ''; };
+    var tile = function (l, v, sub) { return '<div class="el-ft"><div class="el-ft-l">' + l + '</div><div class="el-ft-v">' + v + '</div>' + (sub ? '<div class="el-ft-s">' + sub + '</div>' : '') + '</div>'; };
+    var c = F.ciclo || 'd';
+    var tiles = tile('Consumo', num(r.kwh, 0) + ' kWh', 'em ' + r.dias + ' dias · ' + num(r.kwhMes, 0) + ' kWh/mês') +
+      tile('Em vazio', r.vz[c] + '%', 'ciclo ' + (c === 's' ? 'semanal' : 'diário') + (r.pt[c] != null ? ' · ' + r.pt[c] + '% em ponta' : '')) +
+      tile('Pico de 15 min', num(r.picoKw, 2) + ' kW', 'média do quarto de hora mais alto');
+    var h = '<div class="el-fat-h"><span class="dp-logo el-logo"><span class="dp-logo-ini">' + ico(IC.bars) + '</span></span>' +
+      '<div class="el-fat-t"><div class="el-fat-n">Consumos da E-REDES</div><div class="el-fat-d">' + dc(r.de) + ' → ' + dc(r.ate) + '</div></div></div>' +
+      '<div class="el-fat-g">' + tiles + '</div>';
+    h += '<p>Usámos o teu consumo real de 15 em 15 minutos para repartir a energia pelos períodos horários' + (r.omie ? ' e para calcular as tarifas indexadas com o preço do mercado nas horas em que gastas' : '') + '.</p>';
+    if (r.dias < 330) h += '<p>O ficheiro tem ' + r.dias + ' dias: o consumo anual é uma estimativa a partir desse período. Com um ano completo a conta fica mais certa, porque o inverno e o verão são diferentes.</p>';
+    if (r.estimados) h += '<p>' + r.estimados + ' leituras são estimadas pela E-REDES.</p>';
+    h += '<p>Escolhe a potência contratada ao lado: não vem neste ficheiro.</p>';
     return '<div class="el-fat-res">' + h + '<button type="button" class="el-fat-x" data-fat-fechar aria-label="Fechar">×</button></div>';
   }
 
@@ -919,7 +982,7 @@
     render();
     var y = new XMLHttpRequest();
     y.open('GET', OMIE_URL + '?d=' + new Date().toISOString().slice(0, 10));
-    y.onload = function () { try { var d = JSON.parse(y.responseText); if (d && d.media && d.d && d.s) { S.omie = d; render(); } } catch (err) { } };
+    y.onload = function () { try { var d = JSON.parse(y.responseText); if (d && d.media && d.d && d.s) { if (S.omiePerfil) S.omieBase = d; else S.omie = d; render(); } } catch (err) { } };
     y.send();
     var x = new XMLHttpRequest();
     x.open('GET', DATA_URL + '?d=' + new Date().toISOString().slice(0, 10));

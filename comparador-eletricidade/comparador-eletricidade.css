@@ -167,3 +167,10 @@
 
 /* o menu do site e fixo: ao fazer scroll para o cartao, deixar espaco para nao tapar os titulos */
 #lf-dp .dp-card, #lf-dp .el-strip, #lf-dp .dp-bar { scroll-margin-top: 120px; }
+
+/* Ajuda do ficheiro da E-REDES, por baixo da zona de carregar a fatura */
+#lf-dp .el-eredes { margin-top: 10px; font-size: 14px; color: var(--colors--text-secondary, #5b6170); }
+#lf-dp .el-eredes summary { cursor: pointer; color: var(--colors--brand-600, #f03406); text-decoration: underline; text-underline-offset: 3px; list-style: none; }
+#lf-dp .el-eredes summary::-webkit-details-marker { display: none; }
+#lf-dp .el-eredes p { margin: 8px 0 0; line-height: 1.5; }
+#lf-dp .el-eredes a { color: inherit; text-decoration: underline; }

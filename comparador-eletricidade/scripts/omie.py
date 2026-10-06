@@ -94,15 +94,28 @@ def periodo_semanal(d, h):
     return "p" if em(h, (9.5, 12), (18.5, 21)) else "c"
 
 
+def hora_portugal(dias, d):
+    """Os ficheiros do OMIE estao em hora espanhola (CET/CEST), uma hora a frente de Portugal.
+    Devolve os 96 precos do dia d em hora legal portuguesa (00:00 em Portugal = 01:00 em Espanha), ou None
+    se faltar o dia seguinte ou algum dos dois tiver mudanca de hora."""
+    a, b = dias.get(d), dias.get(d + timedelta(days=1))
+    if not a or not b or len(a) != 96 or len(b) != 96:
+        return None
+    return a[4:] + b[:4]
+
+
 def medias(dias):
-    """dias: {date: [96 precos]}. Devolve a media global e as medias por periodo em cada ciclo."""
+    """dias: {date: [96 precos em hora espanhola]}. Devolve a media global e as medias por periodo em cada ciclo,
+    com os periodos horarios em hora legal portuguesa."""
     tot, n = 0.0, 0
     acc = {"d": {"p": [0.0, 0], "c": [0.0, 0], "v": [0.0, 0]}, "s": {"p": [0.0, 0], "c": [0.0, 0], "v": [0.0, 0]}}
     for d, precos in dias.items():
-        for i, x in enumerate(precos):
+        for x in precos:
             tot += x; n += 1
-            if len(precos) != 96:
-                continue
+        pt = hora_portugal(dias, d)
+        if pt is None:
+            continue
+        for i, x in enumerate(pt):
             h = i / 4
             for ciclo, f in (("d", periodo_diario), ("s", periodo_semanal)):
                 a = acc[ciclo][f(d, h)]; a[0] += x; a[1] += 1
@@ -153,6 +166,10 @@ def atualizar(pedir=ler_dia, hoje=None, log=print):
         raise RuntimeError(f"OMIE: so {len(completos)} dias com dados")
     janela = completos[-JANELA:]
     med = medias({d: dias[d] for d in janela})
+    # o ultimo dia da janela precisa do dia seguinte para as primeiras horas em hora portuguesa
+    seg = janela[-1] + timedelta(days=1)
+    if seg in dias:
+        med = medias({**{d: dias[d] for d in janela}, seg: dias[seg]})
     serie = [{"d": d.isoformat(), "m": round(sum(dias[d]) / len(dias[d]), 2)} for d in completos[-HISTORICO:]]
     dados = {"fonte": "OMIE - preco marginal do mercado diario, Portugal", "unidade": "EUR/MWh",
              "atualizado": hoje.isoformat(), "de": janela[0].isoformat(), "ate": janela[-1].isoformat(),
