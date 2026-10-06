@@ -10,6 +10,8 @@
   var SRC = (document.currentScript && document.currentScript.src) || '';
   var BASE = SRC ? SRC.replace(/[^\/]*(\?.*)?$/, '') : 'https://franklinsilvapt-arch.github.io/comparador-eletricidade/';
   var DATA_URL = BASE + 'data/ofertas.json';
+  /* Copia do repositorio servida pelo jsDelivr: usada se o GitHub Pages falhar (como na avaria de 6/10/2026). Pode ter ate 12 h de atraso. */
+  var BASE_ALT = 'https://cdn.jsdelivr.net/gh/franklinsilvapt-arch/comparador-eletricidade@main/comparador-eletricidade/';
 
   /* ---------- Parametros regulados (ERSE, 2026) ---------- */
   var POTS = [1.15, 2.3, 3.45, 4.6, 5.75, 6.9, 10.35, 13.8, 17.25, 20.7, 27.6, 34.5, 41.4];
@@ -37,11 +39,13 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006t';
+  var VERSAO = '20261006u';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
-    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l);
+    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href;
+    l.onerror = function () { var l2 = document.createElement('link'); l2.rel = 'stylesheet'; l2.href = BASE_ALT + 'comparador-eletricidade.css?v=' + VERSAO; document.head.appendChild(l2); };
+    document.head.appendChild(l);
   })();
   /* Estes valores sao so a reserva: o ofertas.json traz os parametros calibrados todos os dias com o simulador da ERSE. */
   function aplicarParams(P) {
@@ -1022,7 +1026,9 @@
   var ESPERAS = [1500, 4000, 8000];
   function carregarOfertas(tentativa) {
     var x = new XMLHttpRequest();
-    x.open('GET', DATA_URL + '?d=' + new Date().toISOString().slice(0, 10) + (tentativa ? '&t=' + tentativa : ''));
+    /* as duas primeiras tentativas vao ao GitHub Pages, as seguintes a copia do jsDelivr */
+    var url = tentativa < 2 ? DATA_URL : BASE_ALT + 'data/ofertas.json';
+    x.open('GET', url + '?d=' + new Date().toISOString().slice(0, 10) + (tentativa ? '&t=' + tentativa : ''));
     function falhou(err) {
       if (err && err !== 0 && window.console) console.error('comparador-eletricidade:', err); /* erro de codigo, nao de rede: fica no console */
       if (tentativa < ESPERAS.length) { setTimeout(function () { carregarOfertas(tentativa + 1); }, ESPERAS[tentativa]); return; }
