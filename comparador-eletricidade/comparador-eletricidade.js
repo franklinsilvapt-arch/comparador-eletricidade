@@ -37,7 +37,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006q';
+  var VERSAO = '20261006r';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -441,7 +441,7 @@
   function render() {
     var root = document.getElementById('lf-dp');
     if (!root) return;
-    if (S.erro) { root.innerHTML = cabecalho() + '<div class="dp-empty">Não foi possível carregar os preços. Atualiza a página dentro de momentos.</div>'; return; }
+    if (S.erro) { root.innerHTML = cabecalho() + '<div class="dp-empty">Não foi possível carregar os preços. <button type="button" class="dp-btn is-secondary" data-recarregar>Tentar outra vez</button></div>'; return; }
     if (!S.data) { root.innerHTML = cabecalho() + '<div class="dp-empty">A carregar os preços...</div>'; return; }
     if (S.tarifa !== 'auto' && !tarifaDisponivel(S.tarifa)) S.tarifa = 'auto';
     if (F.tarifa !== 'auto' && !tarifaDisponivel(F.tarifa)) F.tarifa = 'auto';
@@ -600,6 +600,7 @@
     if (!t.closest || !t.closest('#lf-dp') || t.closest('[data-stop]')) return;
     if (t.closest('[data-cardtoggle]')) { if (!S.calculado) return; S.formOpen = !S.formOpen; render(); var c0 = document.querySelector('#lf-dp .dp-card, #lf-dp .el-strip'); if (c0 && c0.scrollIntoView) c0.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     if (t.closest('[data-mais]')) { S.mais = !S.mais; render(); return; }
+    if (t.closest('[data-recarregar]')) { S.erro = false; render(); carregarOfertas(0); return; }
     if (t.closest('[data-idx]')) { S.idx = !S.idx; S.visible = 10; render(); return; }
     if (t.closest('[data-share]')) { partilhar(); return; }
     if (t.closest('[data-comparar]')) { comparar(); return; }
@@ -1013,9 +1014,21 @@
     y.open('GET', OMIE_URL + '?d=' + new Date().toISOString().slice(0, 10));
     y.onload = function () { try { var d = JSON.parse(y.responseText); if (d && d.media && d.d && d.s) { if (S.omiePerfil) S.omieBase = d; else S.omie = d; render(); } } catch (err) { } };
     y.send();
+    carregarOfertas(0);
+  }
+  /* Le o ficheiro de ofertas. Se falhar (rede, ou o GitHub Pages a meio de uma publicacao), tenta mais 3 vezes
+     com intervalos crescentes antes de mostrar o erro, e mesmo ai a pessoa pode tentar outra vez sem recarregar. */
+  var ESPERAS = [1500, 4000, 8000];
+  function carregarOfertas(tentativa) {
     var x = new XMLHttpRequest();
-    x.open('GET', DATA_URL + '?d=' + new Date().toISOString().slice(0, 10));
+    x.open('GET', DATA_URL + '?d=' + new Date().toISOString().slice(0, 10) + (tentativa ? '&t=' + tentativa : ''));
+    function falhou(err) {
+      if (err && err !== 0 && window.console) console.error('comparador-eletricidade:', err); /* erro de codigo, nao de rede: fica no console */
+      if (tentativa < ESPERAS.length) { setTimeout(function () { carregarOfertas(tentativa + 1); }, ESPERAS[tentativa]); return; }
+      S.erro = true; render();
+    }
     x.onload = function () {
+      if (x.status && x.status >= 400) return falhou(0);
       try {
         var d = JSON.parse(x.responseText);
         if (!d.ofertas || !d.ofertas.length) throw 0;
@@ -1023,14 +1036,14 @@
         aplicarParams(d.params);
         if (d.nomes) NOMES_ERSE = d.nomes;
         if (d.logos) d.logos.forEach(function (c) { LOGOS[c] = 1; }); /* junta aos logotipos fixos (ex.: G9, que nao esta na ERSE) */
-        d.ofertas.forEach(expandir); S.data = d;
+        d.ofertas.forEach(expandir); S.data = d; S.erro = false;
         if (S.meuId) { var mine = null; d.ofertas.forEach(function (o) { if (o.id === S.meuId) mine = o; }); if (mine) S.meuCom = mine.c; else S.meuId = ''; F.meuCom = S.meuCom; F.meuId = S.meuId; }
         atualizarConsumo(); S.kwhMes = F.kwhMes; S.unid = F.unid; S.valor = F.valor;
         if (S.calculado && !temConsumo(S)) { S.calculado = false; S.formOpen = true; }
-      } catch (err) { S.erro = true; }
+      } catch (err) { return falhou(err); }
       render();
     };
-    x.onerror = function () { S.erro = true; render(); };
+    x.onerror = function () { falhou(0); };
     x.send();
   }
   window.__lfElCalc = function (o, i, kwh, vz, novo, tarifa, pt, fam, social) { return calc(o, i, { kwh: kwh, vz: vz, pt: pt == null ? 0.2 : pt, novo: novo, fam: !!fam, social: !!social }, tarifa); };
