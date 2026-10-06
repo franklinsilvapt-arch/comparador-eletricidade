@@ -41,6 +41,10 @@ Segue a metodologia do simulador da ERSE, validada ao cêntimo nos consumidores-
 
 Ao total da ERSE junta-se a taxa de exploração da DGEG (0,07€ por mês mais IVA a 23%, cerca de 1,03€ por ano), que o simulador da ERSE não conta mas vem em todas as faturas. Por isso o nosso total fica 1,03€ por ano acima do da ERSE em todas as ofertas (a ordem do ranking não muda).
 
+Todas as segundas-feiras, `scripts/validar_erse.py` (workflow `validar-erse.yml`) pede ao simulador da ERSE a fatura de cada oferta em quatro casos (potência e consumo) e compara com a nossa fórmula, com tolerância de 0,10€ por ano. O relatório fica em `data/validacao_erse.txt` e o workflow termina com erro se alguma oferta falhar. Com isto confirmou-se que a parte fixa dos reembolsos e dos descontos de novo cliente vem com IVA no ficheiro da ERSE e que a percentagem de reembolso sobre a energia se aplica também ao IEC. Divergência conhecida: nas ofertas com serviços obrigatórios, a ERSE não conta o reembolso (saldo Iberdrola, saldo My Repsol); nós contamos, porque as condições das ofertas o preveem.
+
+Os créditos de campanha lidos nos sites (ex.: Endesa, 10 créditos de 5€) são aplicados antes do IVA, segundo o regulamento da campanha, e por isso entram com IVA (61,50€).
+
 Parâmetros a rever no topo do `comparador-eletricidade.js` quando mudarem: termo fixo das tarifas de acesso (`TAR_POT`), imposto especial de consumo (`IEC`), contribuição audiovisual (`CAV`), taxa da DGEG (`DGEG`) e limites de IVA a 6% (`KWH_IVA6`).
 
 ## Novo comercializador

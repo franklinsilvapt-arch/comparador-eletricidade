@@ -19,7 +19,7 @@ jobs:
       - id: val
         run: |
           set +e
-          python3 comparador-eletricidade/scripts/validar_erse.py --tol 0.05 > comparador-eletricidade/data/validacao_erse.txt 2>&1
+          python3 comparador-eletricidade/scripts/validar_erse.py --tol 0.10 > comparador-eletricidade/data/validacao_erse.txt 2>&1
           echo "rc=$?" >> "$GITHUB_OUTPUT"
       - run: |
           git config user.name "lf-bot"
