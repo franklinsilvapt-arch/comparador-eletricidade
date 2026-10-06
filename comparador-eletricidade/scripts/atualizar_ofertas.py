@@ -196,6 +196,16 @@ def baixar_logos(urls, codigos):
             print("logotipo de", cod, "falhou:", e, file=sys.stderr)
 
 
+AVISOS = []
+
+
+def aviso(*partes):
+    """Erro nao fatal: vai para o stderr e para data/ultima_execucao.txt, que fica no repositorio para se poder ler sem os logs do GitHub."""
+    msg = " ".join(str(x) for x in partes)
+    AVISOS.append(msg)
+    print(msg, file=sys.stderr)
+
+
 def publicar(mensagem):
     """No GitHub Actions, grava as alteracoes no repositorio mesmo que o script termine com erro a seguir."""
     if not os.environ.get("GITHUB_ACTIONS"):
@@ -343,7 +353,7 @@ def main():
             print(f"parametros calibrados (desvio maximo {desvio} EUR): {P}")
         except Exception as e:
             erro = e
-            print("CALIBRACAO FALHOU, ficam os parametros anteriores:", e, file=sys.stderr)
+            aviso("CALIBRACAO FALHOU, ficam os parametros anteriores:", e)
     # Precos OMIE reais (data/omie.json), para recalcular as ofertas indexadas no comparador
     if "--sem-omie" not in args:
         try:
@@ -351,7 +361,7 @@ def main():
             import omie
             omie.atualizar()
         except Exception as e:
-            print("OMIE FALHOU, fica o ficheiro anterior:", e, file=sys.stderr)
+            aviso("OMIE FALHOU, fica o ficheiro anterior:", e)
             erro = erro or e
     # Ofertas em falta no ficheiro da ERSE, lidas do site do comercializador, e validacao contra o site
     if "--sem-sites" not in args:
@@ -360,11 +370,11 @@ def main():
             import fontes_extra
             ofertas, erros_sites = fontes_extra.aplicar(ofertas, omie_ref=dados.get("omie_ref"))
             for e in erros_sites:
-                print("FONTE DO SITE FALHOU:", e, file=sys.stderr)
+                aviso("FONTE DO SITE FALHOU:", e)
             if erros_sites and not erro:
                 erro = RuntimeError("; ".join(erros_sites))
         except Exception as e:
-            print("FONTES DOS SITES FALHARAM:", e, file=sys.stderr)
+            aviso("FONTES DOS SITES FALHARAM:", e)
             erro = erro or e
         coms = sorted({o["c"] for o in ofertas})
     dados["logos"] = sorted(c for c in coms if os.path.exists(os.path.join(LOGOS, c.lower().replace(" ", "") + ".png")))
@@ -374,6 +384,9 @@ def main():
         json.dump(dados, f, ensure_ascii=False, separators=(",", ":"))
     n_site = sum(1 for o in ofertas if o.get("src") == "site")
     print(f"{len(ofertas)} ofertas de {len(coms)} comercializadores ({n_site} lidas dos sites, {expiradas} expiradas ignoradas), ficheiro ERSE de {atualizado}")
+    with open(os.path.join(RAIZ, "data", "ultima_execucao.txt"), "w", encoding="utf-8") as f:
+        f.write(f"{datetime.now().isoformat(timespec='seconds')} ficheiro ERSE de {atualizado}, {len(ofertas)} ofertas, {n_site} dos sites\n")
+        f.write("\n".join(AVISOS) + ("\n" if AVISOS else "sem avisos\n"))
     publicar("Ofertas da ERSE atualizadas")
     if erro:
         sys.exit(1)
