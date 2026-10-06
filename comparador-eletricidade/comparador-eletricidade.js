@@ -37,7 +37,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006s';
+  var VERSAO = '20261006t';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -71,9 +71,9 @@
 
   var PERFIS = [
     { k: 'p1', l: 'Casal sem filhos', kwh: 1900, pot: 2 },
-    { k: 'p4', l: 'Casal com 1 filho', kwh: 3400, pot: 3 }, /* a meio caminho dos dois perfis da ERSE (sem referencia propria) */
-    { k: 'p2', l: 'Casal com 2 filhos', kwh: 5000, pot: 5 },
-    { k: 'p3', l: 'Casal com 4 filhos', kwh: 10900, pot: 7 }
+    { k: 'p4', l: 'Casal + 1 filho', kwh: 3400, pot: 3 }, /* a meio caminho dos dois perfis da ERSE (sem referencia propria) */
+    { k: 'p2', l: 'Casal + 2 filhos', kwh: 5000, pot: 5 },
+    { k: 'p3', l: 'Casal + 4 filhos', kwh: 10900, pot: 7 }
   ];
   var TARIFAS = { s: 'Simples', b: 'Bi-horária', t: 'Tri-horária' };
 
