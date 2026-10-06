@@ -174,3 +174,7 @@
 #lf-dp .el-eredes summary::-webkit-details-marker { display: none; }
 #lf-dp .el-eredes p { margin: 8px 0 0; line-height: 1.5; }
 #lf-dp .el-eredes a { color: inherit; text-decoration: underline; }
+
+/* Botao "Ir para a ..." com nomes longos: quebra a linha em vez de cortar o texto */
+#lf-dp .dp-c-cta .dp-btn{white-space:normal;height:auto;min-height:44px;line-height:1.25;text-align:center;overflow:visible;text-overflow:clip;max-width:100%;padding-top:10px;padding-bottom:10px;overflow-wrap:anywhere}
+#lf-dp .dp-c-cta{min-width:0}

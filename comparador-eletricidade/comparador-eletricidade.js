@@ -37,7 +37,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006l';
+  var VERSAO = '20261006m';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -556,7 +556,7 @@
       ctl +
       (lst.length ? '<div class="dp-cards">' + cards + '</div>' : '<div class="dp-empty">' + (S.social && S.pot >= TS_POT.length ? 'A tarifa social só existe para potências contratadas até 6,9 kVA.' : 'Nenhuma oferta cumpre estes filtros para ' + potTxt(POTS[S.pot]) + '. Tira um filtro ou muda a tarifa.') + '</div>') +
       (lst.length > vis.length ? '<div class="dp-more"><button type="button" class="dp-btn is-secondary" id="elMore">Mostrar mais ' + Math.min(10, lst.length - vis.length) + ' de ' + (lst.length - vis.length) + '</button></div>' : '')
-      : '<div class="dp-empty el-vazio">' + ico(IC.wave) + '<b>' + S.data.ofertas.length + ' ofertas de ' + Object.keys(S.data.ofertas.reduce(function (m, o) { m[o.c] = 1; return m; }, {})).length + ' comercializadores</b> à espera do teu consumo. Preenche os dados ou carrega a fatura e carrega em "Comparar ofertas".</div>') +
+      : '<div class="dp-empty el-vazio">' + ico(IC.wave) + '<b>' + S.data.ofertas.length + ' ofertas de ' + Object.keys(S.data.ofertas.reduce(function (m, o) { m[o.c] = 1; return m; }, {})).length + ' comercializadores</b> à espera do teu consumo. Preenche os dados e carrega em "Comparar ofertas". Se carregares a fatura, comparamos logo.</div>') +
       '<p class="dp-foot">Preços de todas as ofertas de eletricidade para clientes domésticos comunicadas pelos comercializadores à <a href="https://simuladorprecos.erse.pt/" target="_blank" rel="noopener">ERSE</a>, atualizados a ' + dataPT(S.data.atualizado) + ', para Portugal continental. Ficam de fora os pacotes de eletricidade com gás. ' +
       'A fatura inclui energia, potência, IVA, imposto especial de consumo, contribuição audiovisual e taxa de exploração da DGEG (0,07€ por mês mais IVA). Segue a metodologia do simulador de preços da ERSE, que não conta esta taxa. Quando uma oferta em vigor ainda não está no ficheiro da ERSE, os preços são lidos todos os dias no site do comercializador e a oferta mostra essa fonte. A fatura por mês é a média do ano (o total anual a dividir por 12), por isso uma fatura real de 30 ou 31 dias pode diferir alguns cêntimos. Quando o consumo vem de uma única fatura, lembra-te de que um mês de inverno ou de verão pode estar longe da média do ano. ' +
       'Nas tarifas indexadas, a fatura é uma estimativa: os preços comunicados à ERSE são ajustados ao preço médio do mercado grossista (<a href="https://www.omie.es/pt/market-results/daily/daily-market/day-ahead-price" target="_blank" rel="noopener">OMIE</a>) dos últimos 30 dias, por período horário. A fatura real sobe e desce com o mercado todos os meses. Com o botão "Só tarifas de preço fixo" ficam de fora. ' +
@@ -847,7 +847,7 @@
     var big, sub;
     if (difMes >= 1) {
       big = 'Podes poupar ' + eurInt(difMes * 12) + ' por ano';
-      sub = 'A tua fatura é de <b>' + eur(meu.r.mes) + '</b> por mês' + (meu.o.id === 'FATURA' ? ' aos preços do teu tarifário' : '') + '. Com a oferta mais barata, da ' + esc(nomeDe(m.o.c)) + ', ficaria em <b>' + eur(m.r.mes) + '</b>, menos <b>' + eur(difMes) + '</b> por mês.';
+      sub = (meu.o.id === 'EUR' && r.total && r.dias ? 'A tua fatura é de <b>' + eur(r.total) + '</b> em ' + r.dias + ' dias, ou seja <b>' + eur(meu.r.mes) + '</b> num mês médio' : 'A tua fatura é de <b>' + eur(meu.r.mes) + '</b> por mês' + (meu.o.id === 'FATURA' ? ' aos preços do teu tarifário' : '')) + '. Com a oferta mais barata, da ' + esc(nomeDe(m.o.c)) + ', ficaria em <b>' + eur(m.r.mes) + '</b>, menos <b>' + eur(difMes) + '</b> por mês.';
     } else {
       big = 'Já estás perto do melhor preço';
       sub = 'A tua fatura é de <b>' + eur(meu.r.mes) + '</b> por mês e a oferta mais barata fica em ' + eur(m.r.mes) + '. Mudar dava pouco.';
@@ -887,6 +887,7 @@
     var tile = function (l, v, sub) { return '<div class="el-ft"><div class="el-ft-l">' + l + '</div><div class="el-ft-v">' + v + '</div>' + (sub ? '<div class="el-ft-s">' + sub + '</div>' : '') + '</div>'; };
     var tiles = '';
     if (r.kwh) tiles += tile('Consumo', r.kwh + ' kWh', r.dias ? 'em ' + r.dias + ' dias · ' + r.kwhMes + ' kWh/mês' : 'no período');
+    if (r.total) tiles += tile('Total da fatura', eur(r.total), 'com IVA' + (r.dias ? ', ' + r.dias + ' dias' : '') + (r.totalMes ? ' · ' + eur(r.totalMes) + ' num mês médio' : ''));
     if (r.pot) tiles += tile('Potência', potTxt(POTS[F.pot]), '');
     if (r.tarifa) tiles += tile('Tarifa', TARIFAS[r.tarifa], r.ciclo ? 'ciclo ' + (r.ciclo === 's' ? 'semanal' : 'diário') : (r.vazioPct != null ? r.vazioPct + '% em vazio' + (r.pontaPct != null ? ', ' + r.pontaPct + '% em ponta' : '') : ''));
     if (f.virt) tiles += tile('Energia', num(f.virt[1], 4) + '€', 'por kWh, sem IVA') + tile('Potência/dia', num(f.virt[0], 4) + '€', 'sem IVA');

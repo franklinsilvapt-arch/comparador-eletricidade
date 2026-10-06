@@ -235,13 +235,17 @@
     });
 
     /* Total a pagar da fatura (com IVA): "TOTAL A DEBITAR 46,74 €", "Total com IVA 55,39 €", "Quanto tenho a pagar? ... 74,28 €" (EDP, nas linhas seguintes) */
-    var tot = null, euroRe = /(\d{1,3}(?:\.\d{3})*,\d{2})\s*€/g;
+    /* Prioridade: 1) total da fatura com IVA ("Total com IVA", "Total da fatura de luz", "Total a debitar");
+       2) so se nao houver, "valor a pagar" / "quanto tenho a pagar?", que pode vir reduzido por acertos de faturas anteriores. */
+    var tot = null, totN = 9, euroRe = /(\d{1,3}(?:\.\d{3})*,\d{2})\s*€/g;
     linhas.forEach(function (l, i) {
-      if (!/total\s+(a\s+debitar|a\s+pagar|com\s+iva|c\/\s*iva|da\s+fatura)|a\s+pagar\?|valor\s+a\s+pagar/i.test(l)) return;
-      if (/s\/\s*iva|sem\s+iva|il[íi]quido|parcial|regulad|inferior/i.test(l)) return;
+      var nivel = /total\s+(com\s+iva|c\/\s*iva|da\s+fatura|a\s+debitar)/i.test(l) ? 1 : /total\s+a\s+pagar|a\s+pagar\?|valor\s+a\s+pagar/i.test(l) ? 2 : 0;
+      if (!nivel) return;
+      if (/s\/\s*iva|sem\s+iva|il[íi]quido|parcial|regulad|inferior|inclui|encargos|acesso\s+[àa]s\s+redes/i.test(l)) return;
       var janela = [l, linhas[i + 1] || '', linhas[i + 2] || ''].join(' '), mm, ult = null;
       while ((mm = euroRe.exec(janela))) { var v = num(mm[1]); if (v > 0 && v < 5000) ult = v; }
-      if (ult != null && (tot == null || ult > tot)) tot = ult;
+      if (ult == null) return;
+      if (nivel < totN || (nivel === totN && ult > tot)) { tot = ult; totN = nivel; }
     });
     r.total = tot;
     r.totalMes = tot && r.dias ? Math.round(tot / r.dias * 365.25 / 12 * 100) / 100 : null;
