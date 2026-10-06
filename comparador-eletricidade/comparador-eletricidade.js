@@ -37,7 +37,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006m';
+  var VERSAO = '20261006n';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -102,10 +102,34 @@
     S.erroForm = '';
     CAMPOS.forEach(function (k) { S[k] = F[k]; });
     S.calculado = true; S.visible = 10; S.open = null;
-    S.formOpen = false; /* o formulario fecha-se na faixa; a analise e os resultados ficam a vista */
-    render();
-    if (semScroll) return; /* fatura lida: a pessoa confirma os dados primeiro e desce quando quiser */
-    var alvo = document.querySelector('#lf-dp .dp-bar'); if (alvo && alvo.scrollIntoView) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (semScroll) { S.formOpen = false; render(); return; } /* fatura lida: a pessoa confirma os dados primeiro e desce quando quiser */
+    /* Em dois passos, para a pagina deslizar para baixo ate as ofertas (sobretudo em mobile, onde o formulario e alto):
+       1) os resultados aparecem por baixo do formulario e a pagina desce ate eles;
+       2) depois o formulario fecha-se na faixa, com a posicao ajustada para as ofertas nao saltarem no ecra. */
+    S.formOpen = true; render();
+    var alvo = alvoResultados();
+    if (!alvo) { S.formOpen = false; render(); return; }
+    var topo = alvo.getBoundingClientRect().top + window.pageYOffset - MARGEM_TOPO;
+    if (topo > window.pageYOffset) window.scrollTo({ top: topo, behavior: 'smooth' }); else topo = window.pageYOffset;
+    var token = ++scrollToken;
+    esperarScroll(topo, function () {
+      if (token !== scrollToken || S.formOpen === false) return;
+      var antes = alvoResultados(), yAntes = antes ? antes.getBoundingClientRect().top : 0;
+      S.formOpen = false; render();
+      var depois = alvoResultados();
+      if (depois) window.scrollTo({ top: window.pageYOffset + (depois.getBoundingClientRect().top - yAntes), behavior: 'auto' });
+    });
+  }
+  var MARGEM_TOPO = 120, scrollToken = 0; /* a mesma margem do scroll-margin-top no CSS (barra de navegacao fixa) */
+  function alvoResultados() { return document.querySelector('#lf-dp .el-anl, #lf-dp .el-banner, #lf-dp .dp-bar'); }
+  function esperarScroll(topo, fim) {
+    /* chama fim() quando a pagina chega ao destino (ou desiste ao fim de 1,2 s, se a pessoa mexer entretanto) */
+    var inicio = Date.now();
+    (function ver() {
+      var chegou = Math.abs(window.pageYOffset - topo) < 2 || window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 2;
+      if (chegou || Date.now() - inicio > 1200) { setTimeout(fim, chegou ? 80 : 0); return; }
+      requestAnimationFrame(ver);
+    })();
   }
 
   /* ---------- Helpers ---------- */
