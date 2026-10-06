@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "41 7 * * 1"
 
+permissions:
+  contents: write
+
 jobs:
   validar:
     runs-on: ubuntu-latest
@@ -13,4 +16,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python3 comparador-eletricidade/scripts/validar_erse.py --tol 0.05
+      - id: val
+        run: |
+          set +e
+          python3 comparador-eletricidade/scripts/validar_erse.py --tol 0.05 > comparador-eletricidade/data/validacao_erse.txt 2>&1
+          echo "rc=$?" >> "$GITHUB_OUTPUT"
+      - run: |
+          git config user.name "lf-bot"
+          git config user.email "bot@literaciafinanceira.pt"
+          git add comparador-eletricidade/data/validacao_erse.txt
+          git commit -m "Relatório da validação com o simulador da ERSE" || echo "sem alterações"
+          git pull --rebase
+          git push
+      - run: test "${{ steps.val.outputs.rc }}" = "0"
