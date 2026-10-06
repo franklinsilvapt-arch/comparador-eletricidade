@@ -37,7 +37,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006p';
+  var VERSAO = '20261006q';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -345,7 +345,7 @@
   function notaIdx(n) {
     /* explica a diferenca entre preco fixo e indexado junto ao botao, em vez de so na nota tecnica do fim da pagina */
     if (!n) return '';
-    if (!S.idx) return '<p class="dp-form-note el-idx-nota"><b>Preço fixo</b>: pagas o mesmo por kWh durante o contrato, é o que a maioria das casas tem. <b>Preço indexado</b>: o kWh muda todos os meses com o mercado grossista. Ficaram de fora ' + n + ' tarifas indexadas. Para as ver, desliga o botão "Só preço fixo".</p>';
+    if (!S.idx) return ''; /* so preco fixo: a explicacao esta no glossario */
     return '<p class="dp-form-note el-idx-nota is-on">Estão incluídas <b>' + n + ' tarifas indexadas</b>, marcadas com a etiqueta "Preço indexado". A fatura delas é uma estimativa com o preço médio do mercado grossista dos últimos 30 dias e sobe e desce todos os meses. As restantes têm preço fixo durante o contrato.</p>';
   }
   function notaIndexada(o, r) {
