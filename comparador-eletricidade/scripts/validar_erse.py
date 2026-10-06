@@ -39,11 +39,11 @@ def nossa(P, o, i, kwh, novo):
     tf, tar = tf_dia * 365, tar_dia * 365
     tf_iva = tar * 1.06 + (tf - tar) * 1.23 if pot <= 3.45 else tf * 1.23
 
-    def desc(a):
-        return a[0] + a[1] * tf * 1.23 + (a[2] * en + a[3] * kwh) * iva_e if a else 0
+    def desc(a, iva_fixo):
+        return a[0] * iva_fixo + a[1] * tf * 1.23 + (a[2] * en + a[3] * kwh) * iva_e if a else 0
 
-    reemb = desc(o.get("r"))
-    d_novo = desc(o.get("d")) if novo else 0
+    reemb = desc(o.get("r"), iva_e)  # ReembFixo (€/ano) vem sem IVA
+    d_novo = desc(o.get("d"), 1) if novo else 0  # DescontNovoCliente_c/IVA (€/ano) ja tem IVA
     serv = o.get("cs") or 0
     total = en * iva_e + tf_iva + kwh * P["IEC"] * 1.23 + cav * 12 * 1.06 + serv - reemb - d_novo
     return {"total": total, "reemb": reemb, "dNovo": d_novo, "serv": serv, "en": en, "tf": tf}
@@ -54,9 +54,10 @@ def variantes(p, k):
     import inspect, re
     base = re.search(r'corpo = \((.*?)\)\n', inspect.getsource(A.simular), re.S)
     corpo_a = eval("(" + base.group(1) + ")", {"p": p, "k": k, "social": False, "fam": False})
-    trocas = {"filtro_IndexacaoSpot=1": "filtro_IndexacaoSpot=0", "filtro_ServicosAdicionais=0": "filtro_ServicosAdicionais=1",
+    trocas = {"filtro_ServicosAdicionais=0": "filtro_ServicosAdicionais=1",
               "filtro_SemRestricoesAdicionais=1": "filtro_SemRestricoesAdicionais=0", "filtro_SemReembolsos=1": "filtro_SemReembolsos=0",
-              "filtro_Fidelizacao=1": "filtro_Fidelizacao=0", "filtro_NovosClientes=1": "filtro_NovosClientes=0"}
+              "filtro_Fidelizacao=1": "filtro_Fidelizacao=0"}
+    # filtro_SemReembolsos e filtro_NovosClientes ficam a 1: com 0 o simulador devolve os precos sem contar esses descontos
     corpo_b = corpo_a
     for a, b in trocas.items():
         corpo_b = corpo_b.replace(a, b)

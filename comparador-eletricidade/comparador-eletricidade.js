@@ -35,7 +35,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006h';
+  var VERSAO = '20261006i';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -175,8 +175,10 @@
     var tf = p[0] * 365, tar = tarDia * 365;
     var tfIva = pot <= 3.45 ? tar * 1.06 + (tf - tar) * 1.23 : tf * 1.23;
     var enIva = en * ivaE, iec = kwh * iecKwh * 1.23, cav = cavMes * 12 * 1.06, dgeg = DGEG * 12 * 1.23;
-    function desc(a) { return a ? a[0] + a[1] * tf * 1.23 + (a[2] * en + a[3] * kwh) * ivaE : 0; }
-    var reemb = desc(o.r), dNovo = c.novo ? desc(o.d) : 0, serv = o.cs || 0;
+    /* Descontos: a parte fixa dos reembolsos (ReembFixo da ERSE) vem sem IVA e leva o IVA medio da energia;
+       a dos descontos de novo cliente ja vem com IVA (DescontNovoCliente_c/IVA). Validado com o simulador da ERSE. */
+    function desc(a, ivaFixo) { return a ? a[0] * ivaFixo + a[1] * tf * 1.23 + (a[2] * en + a[3] * kwh) * ivaE : 0; }
+    var reemb = desc(o.r, ivaE), dNovo = c.novo ? desc(o.d, 1) : 0, serv = o.cs || 0;
     var total = enIva + tfIva + iec + cav + dgeg + serv - reemb - dNovo;
     return {
       k: k, total: total, mes: total / 12, p: p, omie: omie,
