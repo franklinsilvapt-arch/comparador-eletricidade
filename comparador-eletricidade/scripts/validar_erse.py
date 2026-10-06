@@ -49,6 +49,27 @@ def nossa(P, o, i, kwh, novo):
     return {"total": total, "reemb": reemb, "dNovo": d_novo, "serv": serv, "en": en, "tf": tf}
 
 
+def variantes(p, k):
+    """Corpos do pedido ao simulador: o da calibracao e um com os filtros de oferta invertidos."""
+    import inspect, re
+    base = re.search(r'corpo = \((.*?)\)\n', inspect.getsource(A.simular), re.S)
+    corpo_a = eval("(" + base.group(1) + ")", {"p": p, "k": k, "social": False, "fam": False})
+    trocas = {"filtro_IndexacaoSpot=1": "filtro_IndexacaoSpot=0", "filtro_ServicosAdicionais=0": "filtro_ServicosAdicionais=1",
+              "filtro_SemRestricoesAdicionais=1": "filtro_SemRestricoesAdicionais=0", "filtro_SemReembolsos=1": "filtro_SemReembolsos=0",
+              "filtro_Fidelizacao=1": "filtro_Fidelizacao=0", "filtro_NovosClientes=1": "filtro_NovosClientes=0"}
+    corpo_b = corpo_a
+    for a, b in trocas.items():
+        corpo_b = corpo_b.replace(a, b)
+    return [corpo_a, corpo_b]
+
+
+def pedir(corpo):
+    import urllib.request
+    req = urllib.request.Request(A.SIM, data=corpo.encode(), headers={**A.UA, "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"})
+    with urllib.request.urlopen(req, timeout=90) as r:
+        return json.loads(r.read().decode("utf-8-sig"))
+
+
 def main():
     tol = float(sys.argv[sys.argv.index("--tol") + 1]) if "--tol" in sys.argv else 0.05
     with open(A.OUT, encoding="utf-8") as f:
@@ -58,8 +79,17 @@ def main():
     casos = [(2, 1900), (5, 5000), (3, 3000), (0, 1000)]
     problemas, vistos, com_novo = [], 0, 0
     for i, kwh in casos:
-        j = A.simular(i, kwh)
-        res = j.get("Resultados") or []
+        # O simulador da ERSE so devolve as ofertas que passam nos filtros do pedido. Pedimos com os filtros
+        # da calibracao e com todos os filtros invertidos, e juntamos as duas respostas.
+        res, ids = [], set()
+        for corpo in variantes(i, kwh):
+            jj = pedir(corpo)
+            for r in jj.get("Resultados") or []:
+                chave = (r["Oferta"][0].get("CodOferta"), str(r["Oferta"][0].get("TipoContagem")))
+                if chave not in ids:
+                    ids.add(chave)
+                    res.append(r)
+        print(f"caso {POTS[i]} kVA, {kwh} kWh: {len(res)} resultados do simulador")
         if not res:
             sys.exit("simulador sem resultados")
         if vistos == 0:
