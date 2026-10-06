@@ -125,11 +125,42 @@
 #lf-dp .el-meu .el-ajuda{margin-top:6px}
 #lf-dp .el-avancado .el-meu{margin-bottom:18px;text-align:left}
 
-#lf-dp .el-anl{margin-top:12px;padding-top:12px;border-top:1px solid var(--border-secondary)}
-#lf-dp .el-anl-t{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
-#lf-dp .el-anl p{margin:0 0 6px}
-#lf-dp .el-ai{margin-top:10px;padding:12px 14px;border:1px solid var(--colors--brand-600, #f03406);border-radius:var(--radius-lg);background:#fff4ef}
-#lf-dp .el-ai p{margin:0 0 10px;color:var(--text-primary)}
-#lf-dp .el-ai-b{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;font-size:14px;line-height:20px;border-radius:var(--radius-xl);background:var(--colors--brand-600, #f03406);color:#fff;border-color:transparent}
-#lf-dp .el-ai-b .dp-i{width:16px;height:16px}
-#lf-dp .el-drop-s{margin:6px 0 0;font-size:13px;line-height:19px;color:var(--text-quaternary)}
+/* Faixa com o essencial depois de comparar */
+#lf-dp .el-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:12px 16px;margin-bottom:14px;border:1px solid var(--border-secondary);border-radius:var(--radius-xl);background:#fff;font-size:14px;line-height:20px;color:var(--text-primary);text-align:left}
+#lf-dp .el-strip-t{font-weight:600;padding-right:16px;border-right:1px solid var(--border-secondary)}
+#lf-dp .el-strip-i{display:inline-flex;align-items:center;gap:8px}
+#lf-dp .el-strip-i .dp-logo{width:26px;height:26px;flex:0 0 26px}
+#lf-dp .el-strip-s{color:var(--text-quaternary)}
+#lf-dp .el-strip-b{margin-left:auto;border:0;background:none;padding:0;font:inherit;font-size:14px;font-weight:500;color:var(--colors--brand-600, #f03406);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+#lf-dp .el-strip-b+.el-strip-b{margin-left:0}
+/* Analise da fatura */
+#lf-dp .el-anl{margin:0 0 14px;padding:20px 22px;border:1px solid var(--border-secondary);border-radius:var(--radius-xl);background:#fff;text-align:left}
+#lf-dp .el-anl-h{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+#lf-dp .el-anl-k{font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text-quaternary)}
+#lf-dp .el-anl-big{font-size:28px;line-height:34px;font-weight:700;color:var(--text-primary);margin:4px 0 6px}
+#lf-dp .el-anl-big.is-pos{color:var(--colors--text-success-700, #067647)}
+#lf-dp .el-anl-sub{margin:0;font-size:15px;line-height:22px;color:var(--text-secondary)}
+#lf-dp .el-anl-sub b{color:var(--text-primary)}
+#lf-dp .el-anl-ico{flex:0 0 56px;width:56px;height:56px;border-radius:50%;background:#fff4ef;color:var(--colors--brand-600, #f03406);display:flex;align-items:center;justify-content:center}
+#lf-dp .el-anl-ico .dp-i{width:28px;height:28px}
+#lf-dp .el-anl-l{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:10px}
+#lf-dp .el-anl-l li{display:flex;align-items:flex-start;gap:12px;font-size:14px;line-height:20px;color:var(--text-secondary)}
+#lf-dp .el-anl-l li>span:last-child{flex:1;min-width:0}
+#lf-dp .el-anl-l b{color:var(--text-primary)}
+#lf-dp .el-anl-i{flex:0 0 32px;width:32px;height:32px;border-radius:50%;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;color:var(--text-primary)}
+#lf-dp .el-anl-i .dp-i{width:16px;height:16px}
+#lf-dp .el-anl-bar{display:block;height:8px;border-radius:4px;background:var(--bg-tertiary);margin-top:8px;overflow:hidden}
+#lf-dp .el-anl-bar span{display:block;height:100%;background:var(--colors--text-success-700, #067647);border-radius:4px}
+#lf-dp .el-banner{margin:4px 0 12px;text-align:center;font-size:16px;line-height:24px;color:var(--text-primary)}
+/* KPI da fatura: coluna mais larga e texto a quebrar (Safari) */
+#lf-dp .dp-kpis{grid-template-columns:1.5fr 1fr 1fr 1fr}
+#lf-dp .el-kpi-fat .el-poup,#lf-dp .el-kpi-fat .dp-kpi-s{white-space:normal}
+@media (max-width:1000px){
+  #lf-dp .dp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #lf-dp .el-strip{gap:6px 14px}
+  #lf-dp .el-strip-t{border:0;padding:0;width:100%}
+  #lf-dp .el-strip-b{margin-left:0}
+  #lf-dp .el-anl{padding:16px}
+  #lf-dp .el-anl-big{font-size:24px;line-height:30px}
+  #lf-dp .el-anl-ico{display:none}
+}

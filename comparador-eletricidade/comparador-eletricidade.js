@@ -35,7 +35,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006c';
+  var VERSAO = '20261006d';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -100,7 +100,7 @@
     S.erroForm = '';
     CAMPOS.forEach(function (k) { S[k] = F[k]; });
     S.calculado = true; S.visible = 10; S.open = null;
-    if (!semScroll) S.formOpen = false; /* em mobile o cartao fecha para os resultados ficarem a vista */
+    S.formOpen = false; /* o formulario fecha-se na faixa; a analise e os resultados ficam a vista */
     render();
     if (semScroll) return; /* fatura lida: a pessoa confirma os dados primeiro e desce quando quiser */
     var alvo = document.querySelector('#lf-dp .dp-bar'); if (alvo && alvo.scrollIntoView) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -136,7 +136,12 @@
     wave: '<path d="M3 17l5-6 4 3 4-7 5 6"/>',
     out: '<path d="M7 17 17 7M7 7h10v10"/>',
     link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
-    down: '<path d="M12 5v14M5 12l7 7 7-7"/>'
+    down: '<path d="M12 5v14M5 12l7 7 7-7"/>',
+    bolt: '<path d="M13 2 3 14h8l-1 8 10-12h-8l1-8Z"/>',
+    slid: '<path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="#fff"/><circle cx="15" cy="12" r="2" fill="#fff"/><circle cx="7" cy="18" r="2" fill="#fff"/>',
+    bars: '<path d="M4 20V12M10 20V6M16 20v-4M22 20H2"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    lupa: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'
   };
   var CARET = '<svg class="dp-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
 
@@ -485,8 +490,30 @@
       ? '<div class="el-duo"><div><label class="dp-label" for="elVazio">Consumo em vazio</label><select class="dp-input dp-input-select" id="elVazio">' + vzOpts + '</select></div><div><label class="dp-label" for="elPonta">Em ponta</label><select class="dp-input dp-input-select" id="elPonta">' + ptOpts + '</select></div></div>' + cicloSel
       : '<div' + (F.tarifa === 's' ? ' class="el-off"' : '') + '><label class="dp-label" for="elVazio">Consumo em vazio</label><select class="dp-input dp-input-select" id="elVazio"' + (F.tarifa === 's' ? ' disabled' : '') + '>' + vzOpts + '</select></div>' + cicloSel;
 
-    root.innerHTML = cabecalho() +
-      '<div class="dp-card' + (S.formOpen ? ' is-open' : '') + '"><button type="button" class="dp-card-toggle" data-cardtoggle aria-expanded="' + (S.formOpen ? 'true' : 'false') + '"><span><span class="dp-card-toggle-t">Consumo, potência e tarifa</span><span class="dp-card-toggle-s">' + resumo + '</span></span>' + CARET + '</button>' +
+    /* Depois de comparar, o formulario fecha-se numa faixa com o essencial; "Afinar a simulação" volta a abri-lo */
+    var faixa = '';
+    if (S.calculado && !S.formOpen) {
+      var fr0 = S.fat && S.fat.r ? S.fat.r : null, itensF = [];
+      if (fr0) {
+        var comF = fr0.com ? nomeDe(fr0.com) : (fr0.comNome || null);
+        itensF.push((fr0.com ? logo(fr0.com, comF) : '') + '<span>' + (comF ? esc(comF) : 'Fatura') + (fr0.de && fr0.ate ? ' <span class="el-strip-s">· ' + dataPT(fr0.de).replace(/ de \d{4}$/, '') + ' a ' + dataPT(fr0.ate).replace(/ de \d{4}$/, '') + '</span>' : '') + '</span>');
+      }
+      itensF.push('<b>' + (S.kwhIn > 0 ? milhar(String(Math.round(S.kwhMes))) + ' kWh' : eurInt(S.eurIn)) + '</b> <span class="el-strip-s">por mês</span>');
+      itensF.push('<b>' + potTxt(POTS[S.pot]) + '</b>');
+      itensF.push(S.tarifa === 'auto' ? 'Tarifa mais barata' : TARIFAS[S.tarifa]);
+      if (meu && meu.o.id === 'FATURA' && meu.r.p) itensF.push('<b>' + num(meu.r.p[1], 4) + '€</b> <span class="el-strip-s">por kWh</span>', '<b>' + num(meu.r.p[0], 4) + '€</b> <span class="el-strip-s">por dia</span>');
+      else if (meu) itensF.push('<span class="el-strip-s">O teu tarifário:</span> ' + esc(meu.o.n));
+      else if (S.eurIn > 0 && S.eurTocado && S.kwhIn > 0) itensF.push('<b>' + eurInt(S.eurIn) + '</b> <span class="el-strip-s">pagos por mês</span>');
+      faixa = '<div class="el-strip"><span class="el-strip-t">' + (fr0 ? 'A tua fatura' : 'A tua simulação') + '</span>' + itensF.map(function (x) { return '<span class="el-strip-i">' + x + '</span>'; }).join('') +
+        '<button type="button" class="el-strip-b" data-cardtoggle>' + (fr0 ? 'Afinar a simulação' : 'Alterar os dados') + '</button>' + (fr0 ? '<button type="button" class="el-strip-b" data-fatura>Carregar outra fatura</button>' : '') + '</div>';
+    }
+    var banner = '';
+    if (S.calculado && res.melhor) {
+      var nMais = meu ? res.todos.filter(function (it) { return it.r.total < meu.r.total - 0.5; }).length : 0;
+      banner = '<p class="el-banner">' + (meu && nMais ? '🎉 Encontrámos <b>' + nMais + '</b> ofertas mais baratas do que a tua ↓' : 'Encontrámos <b>' + res.nOfertas + '</b> ofertas para o teu consumo ↓') + '</p>';
+    }
+    root.innerHTML = cabecalho() + (faixa ? faixa + ANALISE : '') +
+      (faixa ? '' : '<div class="dp-card is-open"><button type="button" class="dp-card-toggle" data-cardtoggle aria-expanded="true"' + (S.calculado ? '' : ' disabled') + '><span><span class="dp-card-toggle-t">Consumo, potência e tarifa</span><span class="dp-card-toggle-s">' + resumo + '</span></span>' + (S.calculado ? CARET : '') + '</button>' +
       '<div class="dp-card-body"><div class="el-vias">' +
       '<section class="el-via el-via-pdf"><div class="el-via-h"><span class="el-via-t">Carregar a fatura em PDF</span><span class="el-via-s">Lemos o consumo, a potência, a tarifa e o que pagas hoje.</span></div>' +
       zonaFatura() +
@@ -516,8 +543,8 @@
       '</section></div>' +
       '<div class="el-go"><button type="button" class="dp-btn el-go-b" data-comparar>' + (S.calculado ? (alterado() ? 'Atualizar a comparação' : 'Comparar outra vez') : 'Comparar ofertas') + ico(IC.down) + '</button>' +
       (S.erroForm ? '<span class="el-go-n is-erro">' + esc(S.erroForm) + '</span>' : alterado() ? '<span class="el-go-n">Alteraste os dados. Os resultados em baixo ainda são da comparação anterior.</span>' : '') + '</div>' +
-      '</div></div>' +
-      (S.calculado ? '<div class="dp-bar"><div class="dp-chips">' + chips + '</div></div>' +
+      '</div></div>' + ANALISE) +
+      (S.calculado ? banner + '<div class="dp-bar"><div class="dp-chips">' + chips + '</div></div>' +
       ctl +
       (lst.length ? '<div class="dp-cards">' + cards + '</div>' : '<div class="dp-empty">' + (S.social && S.pot >= TS_POT.length ? 'A tarifa social só existe para potências contratadas até 6,9 kVA.' : 'Nenhuma oferta cumpre estes filtros para ' + potTxt(POTS[S.pot]) + '. Tira um filtro ou muda a tarifa.') + '</div>') +
       (lst.length > vis.length ? '<div class="dp-more"><button type="button" class="dp-btn is-secondary" id="elMore">Mostrar mais ' + Math.min(10, lst.length - vis.length) + ' de ' + (lst.length - vis.length) + '</button></div>' : '')
@@ -536,12 +563,12 @@
   document.addEventListener('click', function (e) {
     var t = e.target;
     if (!t.closest || !t.closest('#lf-dp') || t.closest('[data-stop]')) return;
-    if (t.closest('[data-cardtoggle]')) { S.formOpen = !S.formOpen; render(); return; }
+    if (t.closest('[data-cardtoggle]')) { if (!S.calculado) return; S.formOpen = !S.formOpen; render(); var c0 = document.querySelector('#lf-dp .dp-card, #lf-dp .el-strip'); if (c0 && c0.scrollIntoView) c0.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     if (t.closest('[data-mais]')) { S.mais = !S.mais; render(); return; }
     if (t.closest('[data-idx]')) { S.idx = !S.idx; S.visible = 10; render(); return; }
     if (t.closest('[data-share]')) { partilhar(); return; }
     if (t.closest('[data-comparar]')) { comparar(); return; }
-    if (t.closest('[data-fatura]')) { var fi = document.getElementById('elFatura'); if (fi) fi.click(); return; }
+    if (t.closest('[data-fatura]')) { var fi = document.getElementById('elFatura'); if (!fi) { S.formOpen = true; render(); fi = document.getElementById('elFatura'); } if (fi) fi.click(); return; }
     if (t.closest('[data-fat-fechar]')) { S.fat = null; render(); return; }
     if (t.closest('[data-ai]')) { lerComAI(); return; }
     var a = t.closest('[data-tarifa]');
@@ -706,7 +733,7 @@
     var f = { r: r, lidos: [], faltas: r.avisos.slice(), meu: null };
     if (r.pot) { var pi = POTS.indexOf(maisPerto(POTS, r.pot)); if (pi >= 0) F.pot = pi; }
     if (r.kwhMes) { F.kwhIn = r.kwhMes; F.eurIn = null; F.perfil = null; }
-    if (r.totalMes) { F.eurIn = r.totalMes; F.eurTocado = true; }
+    if (r.totalMes) { F.eurIn = Math.round(r.totalMes * 100) / 100; F.eurTocado = true; }
     atualizarConsumo();
     var temRep = r.vazioPct != null;
     if (temRep) {
@@ -761,28 +788,36 @@
   /* Texto curto sobre a situacao da pessoa face ao mercado, quando ha fatura lida e base conhecida */
   function analiseFatura(res, meu) {
     if (!S.calculado || !S.fat || !S.fat.r || !meu || !res.melhor) return '';
-    var r = S.fat.r, m = res.melhor, p = [];
+    var r = S.fat.r, m = res.melhor, itens = [];
     var difMes = (meu.r.total - m.r.total) / 12, cheaper = res.todos.filter(function (it) { return it.r.total < meu.r.total - 0.5; }).length;
-    if (difMes >= 1) p.push('Pagas <b>' + eur(meu.r.mes) + ' por mês</b>. A oferta mais barata para o teu consumo (' + esc(nomeDe(m.o.c)) + ' · ' + esc(m.o.n) + ') fica em ' + eur(m.r.mes) + ': <b>' + eur(difMes) + ' a menos por mês</b>, ' + eurInt(difMes * 12) + ' por ano. ' + (cheaper ? 'Das ' + res.todos.length + ' ofertas do mercado, ' + cheaper + ' ficam mais baratas do que o que pagas hoje.' : ''));
-    else p.push('Pagas <b>' + eur(meu.r.mes) + ' por mês</b> e estás perto do melhor que o mercado tem: a oferta mais barata fica em ' + eur(m.r.mes) + '. Mudar dava pouco.');
-    /* de onde vem a diferenca: energia ou potencia */
-    if (difMes >= 1 && meu.r.p && m.r.p && meu.r.k === m.r.k) {
-      var dE = (meu.r.p[1] - m.r.p[1]) * S.kwhMes, dP = (meu.r.p[0] - m.r.p[0]) * 365.25 / 12;
-      if (dE > 0.5 || dP > 0.5) {
-        var txtE = 'A energia é onde mais pagas a mais: ' + num(meu.r.p[1], 4) + '€ por kWh contra ' + num(m.r.p[1], 4) + '€ na oferta mais barata (' + eur(dE) + ' por mês, sem IVA).';
-        var txtP = 'A diferença está sobretudo na potência: ' + num(meu.r.p[0], 4) + '€ por dia contra ' + num(m.r.p[0], 4) + '€ (' + eur(dP) + ' por mês, sem IVA).';
-        p.push(dE >= dP ? txtE : txtP);
-      }
+    var big, sub;
+    if (difMes >= 1) {
+      big = 'Podes poupar ' + eurInt(difMes * 12) + ' por ano';
+      sub = 'Pagas <b>' + eur(meu.r.mes) + '</b> por mês. Na ' + esc(nomeDe(m.o.c)) + ' pagavas <b>' + eur(m.r.mes) + '</b>: <b>' + eur(difMes) + '</b> a menos por mês.';
+    } else {
+      big = 'Já estás perto do melhor preço';
+      sub = 'Pagas <b>' + eur(meu.r.mes) + '</b> por mês e a oferta mais barata fica em ' + eur(m.r.mes) + '. Mudar dava pouco.';
     }
-    /* bi-horaria com a reparticao real */
-    if (r.vazioPct != null && meu.r.k === 's' && m.r.k === 'b') p.push('Com <b>' + r.vazioPct + '%</b> do consumo em vazio, a bi-horária compensa: a melhor oferta já é bi-horária.');
-    else if (r.vazioPct != null && meu.r.k === 's' && r.vazioPct >= 45) p.push('Tens ' + r.vazioPct + '% do consumo em vazio, acima do habitual. Vale a pena olhar para as ofertas bi-horárias.');
-    /* potencia: estimativa de descer um escalao */
+    /* energia vs potencia */
+    if (meu.r.p && m.r.p && meu.r.k === m.r.k) {
+      var dE = (meu.r.p[1] - m.r.p[1]) * S.kwhMes, dP = (meu.r.p[0] - m.r.p[0]) * 365.25 / 12;
+      if (dE > 0.5) itens.push(['bolt', '<b>Energia:</b> pagas ' + num(meu.r.p[1], 4) + '€ por kWh. A oferta mais barata cobra ' + num(m.r.p[1], 4) + '€ (' + eur(dE) + ' por mês de diferença, sem IVA).']);
+      else if (dE < -0.5) itens.push(['bolt', '<b>Energia:</b> o teu preço do kWh (' + num(meu.r.p[1], 4) + '€) já é mais baixo do que o da oferta mais barata (' + num(m.r.p[1], 4) + '€). A diferença está na potência.']);
+      if (dP > 0.5 && dP >= dE) itens.push(['slid', '<b>Potência:</b> pagas ' + num(meu.r.p[0], 4) + '€ por dia contra ' + num(m.r.p[0], 4) + '€ na oferta mais barata (' + eur(dP) + ' por mês, sem IVA).']);
+    }
+    /* descer um escalao de potencia */
     if (S.pot >= 3 && S.pot < POTS.length && m.o[m.r.k] && m.o[m.r.k][S.pot - 1]) {
       var rb = calc(m.o, S.pot - 1, ctx(), S.tarifa);
-      if (rb && m.r.mes - rb.mes >= 1) p.push('A potência de <b>' + potTxt(POTS[S.pot]) + '</b> custa-te ' + eur(meu.r.potencia / 12) + ' por mês. Se o quadro nunca te dispara, descer para ' + potTxt(POTS[S.pot - 1]) + ' pouparia mais ' + eur(m.r.mes - rb.mes) + ' por mês na melhor oferta. Confirma primeiro com o comercializador.');
+      if (rb && m.r.mes - rb.mes >= 1) itens.push(['slid', '<b>Potência:</b> se o quadro nunca dispara, descer de ' + potTxt(POTS[S.pot]) + ' para ' + potTxt(POTS[S.pot - 1]) + ' poupa mais ' + eur(m.r.mes - rb.mes) + ' por mês. Confirma com o comercializador.']);
     }
-    return '<div class="el-anl"><div class="el-anl-t">Análise da tua fatura</div>' + p.map(function (x) { return '<p>' + x + '</p>'; }).join('') + '</div>';
+    /* bi-horaria */
+    if (r.vazioPct != null && meu.r.k === 's' && m.r.k === 'b') itens.push(['clock', '<b>Bi-horária:</b> com ' + r.vazioPct + '% do consumo em vazio compensa mudar de tarifa. A melhor oferta já é bi-horária.']);
+    else if (r.vazioPct != null && meu.r.k === 's' && r.vazioPct >= 45) itens.push(['clock', '<b>Bi-horária:</b> tens ' + r.vazioPct + '% do consumo em vazio, acima do habitual. Vale a pena olhar para as ofertas bi-horárias.']);
+    /* mercado */
+    var pct = res.todos.length ? Math.round(cheaper / res.todos.length * 100) : 0;
+    itens.push(['bars', '<b>Mercado:</b> ' + cheaper + ' das ' + res.todos.length + ' ofertas são mais baratas do que a tua.<span class="el-anl-bar"><span style="width:' + pct + '%"></span></span>']);
+    return '<div class="el-anl"><div class="el-anl-h"><div><div class="el-anl-k">Análise da tua fatura</div><div class="el-anl-big' + (difMes >= 1 ? ' is-pos' : '') + '">' + big + '</div><p class="el-anl-sub">' + sub + '</p></div><span class="el-anl-ico">' + ico(IC.lupa) + '</span></div>' +
+      '<ul class="el-anl-l">' + itens.map(function (x) { return '<li><span class="el-anl-i">' + ico(IC[x[0]]) + '</span><span>' + x[1] + '</span></li>'; }).join('') + '</ul></div>';
   }
   function blocoAI(f) {
     return '<div class="el-ai"><p>' + (f.motivoAI === 'foto' ? 'Fotografias não se leem no browser. ' : 'Não conseguimos ler esta fatura no teu browser. ') + 'Queres tentar com AI? A fatura é enviada para ser lida e <b>não fica guardada</b>.</p>' +
@@ -813,7 +848,7 @@
     if (f.faltas.length) h += '<p>Não encontrámos na fatura: <b>' + esc(f.faltas.join(', ')) + '</b>.' + (f.podeAI ? '' : ' Preenche ao lado.') + '</p>';
     if (f.podeAI) h += blocoAI(f);
     if (r.ai) h += '<p class="el-fat-nota">Lida com AI. Confirma os valores antes de comparar.</p>';
-    return '<div class="el-fat-res">' + h + ANALISE + '<button type="button" class="el-fat-x" data-fat-fechar aria-label="Fechar">×</button></div>';
+    return '<div class="el-fat-res">' + h + '<button type="button" class="el-fat-x" data-fat-fechar aria-label="Fechar">×</button></div>';
   }
 
   function lerURL() {

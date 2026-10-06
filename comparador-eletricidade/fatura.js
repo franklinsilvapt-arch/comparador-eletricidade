@@ -234,6 +234,18 @@
       if (n && soma > 0 && soma < 50 && soma > r.descontoPct) r.descontoPct = Math.round(soma * 100) / 100;
     });
 
+    /* Total a pagar da fatura (com IVA): "TOTAL A DEBITAR 46,74 €", "Total com IVA 55,39 €", "Quanto tenho a pagar? ... 74,28 €" (EDP, nas linhas seguintes) */
+    var tot = null, euroRe = /(\d{1,3}(?:\.\d{3})*,\d{2})\s*€/g;
+    linhas.forEach(function (l, i) {
+      if (!/total\s+(a\s+debitar|a\s+pagar|com\s+iva|c\/\s*iva|da\s+fatura)|a\s+pagar\?|valor\s+a\s+pagar/i.test(l)) return;
+      if (/s\/\s*iva|sem\s+iva|il[íi]quido|parcial|regulad|inferior/i.test(l)) return;
+      var janela = [l, linhas[i + 1] || '', linhas[i + 2] || ''].join(' '), mm, ult = null;
+      while ((mm = euroRe.exec(janela))) { var v = num(mm[1]); if (v > 0 && v < 5000) ult = v; }
+      if (ult != null && (tot == null || ult > tot)) tot = ult;
+    });
+    r.total = tot;
+    r.totalMes = tot && r.dias ? Math.round(tot / r.dias * 365.25 / 12 * 100) / 100 : null;
+
     /* Nome do plano, quando a fatura o diz */
     m = /(?:Plano|Tarif[áa]rio|Oferta)\s*:\s*([^\n|]{2,40})/i.exec(T);
     r.plano = m ? m[1].trim() : null;
