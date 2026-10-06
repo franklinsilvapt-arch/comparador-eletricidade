@@ -307,6 +307,171 @@ def endesa_ofertas(chave, ficheiro, url, nome, renov, pg, ft, ct, modal, nota_de
 
 
 # ---------------------------------------------------------------------------
+# Tarifas de acesso as redes em BTN 2026 (ERSE, Diretiva n.o 10/2025), EUR/kWh, sem IVA.
+# Usadas nas ofertas indexadas por formula, em que o comercializador soma a TAR ao preco de mercado.
+# Fonte: https://www.erse.pt/media/lamnmp31/diretiva-erse-10-2025-tep-se-2026.pdf (tabela "Tarifa de acesso as redes em BTN").
+# ---------------------------------------------------------------------------
+TAR_KWH = {"s": [0.0607], "b": [0.0835, 0.0158], "t": [0.2452, 0.0412, 0.0158], "t_alta": [0.2457, 0.0524, 0.0150]}
+PERDAS_ERSE = 0.16  # coeficiente medio de perdas em BTN usado nas formulas (a MUON fixa 16,39% na ficha)
+
+
+def preco_formula(omie_ref, k_kwh, cgs_kwh, perdas, extra_kwh, tar):
+    """Preco de energia (EUR/kWh) de uma formula (OMIE + CGS + K) x (1 + perdas) [+ extras] + TAR, ao OMIE de referencia
+    da ERSE (EUR/MWh). O comparador ajusta depois ao OMIE real, como faz com as indexadas da ERSE."""
+    return [round((omie_ref / 1000 + cgs_kwh) * (1 + perdas) + k_kwh + extra_kwh + t, 5) for t in tar]
+
+
+# ---------------------------------------------------------------------------
+# MUON: a pagina de tarifas e uma aplicacao Angular; os precos vem da API JSON do site (POST /api/contrato/get).
+# Formula da ficha de informacao normalizada: PE = (OMIE + CGS) x (1 + perdas) + K + FTS + TAR, com perdas 16,39%
+# e FTS (financiamento da tarifa social) 0,002067 EUR/kWh. K e CGS vem da API, em EUR/MWh.
+# ---------------------------------------------------------------------------
+MUON_API = "https://muon.pt/api/contrato/get"
+MUON_URL = "https://muon.pt/tarifas/domestico/0?social=0"
+MUON_FIN = "https://muon.pt/pdfs/2026/2025_02_04_FIN_indexado_casa.pdf"
+MUON_PERDAS, MUON_FTS = 0.1639, 0.002067
+
+
+def muon_api():
+    import json
+    corpo = json.dumps({"tipoAdesao": "DOMESTICO", "tipo_pe": 0, "social": 0, "bancos": False, "tarifas": True,
+                        "zonas": False, "ciclos": False, "opcoes_imi": False, "cur": False, "consentimentos": False}).encode()
+    req = urllib.request.Request(MUON_API, data=corpo, headers={**UA, "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def muon_ofertas(dados, omie_ref):
+    if dados.get("status") != "ok" or not dados.get("tarifas"):
+        raise ValueError("MUON: resposta da API sem tarifas")
+    ofertas = []
+    for t in dados["tarifas"]:
+        if not t.get("ativa") or t.get("tipoAdesao") != "DOMESTICO" or t.get("social"):
+            continue
+        nome = re.sub(r"\s+", " ", t["nomeTarifa"]).strip()
+        if not t.get("indexada"):
+            raise ValueError(f"MUON {nome}: tarifa de preco fixo sem precos de energia na API (formato novo?)")
+        var = {v["codigo"]: num(v["valor"]) for v in t.get("variaveisIndexadas") or []}
+        k, cgs = var.get("K"), var.get("CGS", 0.0)
+        if k is None or not (0 < k < 100) or not (0 <= cgs < 20):
+            raise ValueError(f"MUON {nome}: K ou CGS fora do plausivel ({var})")
+        hor = t.get("horarios") or {}
+        pots = (hor.get("SIMPLES") or {}).get("potencias") or {}
+        tf = []
+        for p in POTS:
+            x = pots.get(str(p)) or {}
+            v = num(((x.get("precosPotencia") or {}).get("POTENCIA") or {}).get("valor"))
+            tf.append(v)
+        if any(v is None or not (0.05 < v < 4) for v in tf):
+            raise ValueError(f"MUON {nome}: termos de potencia em falta ou fora do plausivel: {tf}")
+        if not all(a < b for a, b in zip(tf, tf[1:])):
+            raise ValueError(f"MUON {nome}: termos de potencia nao crescem com a potencia")
+        if not t.get("incluiRedes"):
+            raise ValueError(f"MUON {nome}: termo de potencia sem redes incluidas (formato novo?)")
+        es = preco_formula(omie_ref, k / 1000, cgs / 1000, MUON_PERDAS, MUON_FTS, TAR_KWH["s"])
+        eb = preco_formula(omie_ref, k / 1000, cgs / 1000, MUON_PERDAS, MUON_FTS, TAR_KWH["b"])
+        et = preco_formula(omie_ref, k / 1000, cgs / 1000, MUON_PERDAS, MUON_FTS, TAR_KWH["t"])
+        et_alta = preco_formula(omie_ref, k / 1000, cgs / 1000, MUON_PERDAS, MUON_FTS, TAR_KWH["t_alta"])
+        pag = [p["id"] for p in t.get("tiposPagamento") or []]
+        pg = "100" if "DDC" in pag or "DD" in pag else "010"
+        pag_txt = "débito direto" if pg == "100" else "pagamento por multibanco"
+        chave = re.sub(r"[^A-Z0-9]+", "_", nome.upper()).strip("_")
+        ofertas.append({
+            "id": f"SITE_MUON_{chave}", "c": "MUON", "n": nome, "f": "01010000", "pg": pg, "ft": "10", "ct": "100", "at": "0011",
+            "u": MUON_URL, "fp": MUON_FIN, "m": f"Fatura eletrónica e {pag_txt}",
+            "to": f"Preço indexado ao mercado: energia = (OMIE + CGS) × (1 + perdas de {MUON_PERDAS * 100:.2f}%) + {k:g} €/MWh de margem "
+                  f"+ financiamento da tarifa social + tarifa de acesso às redes. Contrato de 12 meses com renovação automática, sem fidelização.",
+            "tap": "O preço da energia muda todos os meses com o preço médio do mercado OMIE.",
+            "s": compacta([[tf[i], es[0]] for i in range(NPOT)], 2),
+            "b": compacta([[tf[i], eb[0], eb[1]] for i in range(NPOT)], 3),
+            "t": compacta([[tf[i]] + (et if i < 10 else et_alta) for i in range(NPOT)], 4),
+            "ix": {"k": k, "cgs": cgs, "perdas": MUON_PERDAS, "extra": MUON_FTS, "fonte": "api"},
+        })
+    if not ofertas:
+        raise ValueError("MUON: nenhuma tarifa domestica ativa na API")
+    return ofertas
+
+
+# ---------------------------------------------------------------------------
+# Luzigas (Lusiadaenergia): tres planos "Dinamico" (Poupanca +, Poupanca e Base), cada um com termo de potencia proprio
+# e energia "Indexado ou Fixo". Os precos fixos vem da tabela da pagina. A indexada segue
+# PE = (OMIE + K + CGS) x (1 + perdas) + TAR (ficha de informacao normalizada), com K = 10 EUR/MWh e CGS lido da pagina;
+# so entra quando a pagina indica o K.
+# ---------------------------------------------------------------------------
+LUZIGAS = [
+    ("poupancamais", "Dinâmico Poupança +", "https://www.luzigas.pt/plano-luz-tarifario-dinamico-poupanca-mais/"),
+    ("poupanca", "Dinâmico Poupança", "https://www.luzigas.pt/plano-luz-tarifario-dinamico-poupanca/"),
+    ("base", "Dinâmico Base", "https://www.luzigas.pt/plano-luz-tarifario-dinamico-base/"),
+]
+LUZIGAS_FIN = "https://www.luzigas.pt/wp-content/uploads/2026/06/Ficha-FIN-Poupanc%CC%A7a-.pdf"
+
+
+def luzigas_tabela(tab, n_energia):
+    """(termos de potencia por kVA, precos fixos de energia) de uma tabela 'Potencia | ... | Indexado ou Fixo x'."""
+    tf, fixos = {}, []
+    for lin in tab:
+        if not lin or num(lin[0]) not in POTS:
+            continue
+        tf[num(lin[0])] = num(lin[1])
+        for cel in lin[2:]:
+            m = re.search(r"Fixo\s*([\d,]+)", cel)
+            if m:
+                fixos.append(num(m.group(1)))
+    if len(fixos) != n_energia or any(x is None or not (0.03 < x < 0.6) for x in fixos):
+        raise ValueError(f"Luzigás: precos fixos de energia inesperados: {fixos}")
+    if any(v is None or not (0.05 < v < 4) for v in tf.values()):
+        raise ValueError(f"Luzigás: termos de potencia fora do plausivel: {tf}")
+    return tf, fixos
+
+
+def luzigas_ofertas(html, chave, nome, url, omie_ref):
+    tabs = [t for t in tabelas(html) if any(lin and num(lin[0]) in POTS for lin in t)]
+    if len(tabs) < 3:
+        raise ValueError(f"Luzigás {nome}: esperava 3 tabelas de precos (simples, bi, tri), encontrei {len(tabs)}")
+    tf_s, (e,) = luzigas_tabela(tabs[0], 1)
+    tf_b, (fv, vz) = luzigas_tabela(tabs[1], 2)
+    tf_t, (pt, ch, vt) = luzigas_tabela(tabs[2], 3)
+    if sorted(tf_s) != POTS[:10] or sorted(tf_b) != POTS[2:10] or sorted(tf_t) != POTS[10:]:
+        raise ValueError(f"Luzigás {nome}: potencias inesperadas nas tabelas")
+    if any(abs(tf_s[p] - tf_b[p]) > 0.00005 for p in tf_b):
+        raise ValueError(f"Luzigás {nome}: termo de potencia diferente entre simples e bi-horaria")
+    if not (vz < e < fv and vt < ch < pt):
+        raise ValueError(f"Luzigás {nome}: ordem dos periodos horarios inesperada")
+    tf = {**tf_s, **tf_t}
+    texto = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
+    m_cgs = re.search(r"CGS\s*\(h\)[^0-9]*([\d,]+)\s*€/kWh", texto)
+    m_k = re.search(r"K\s*=\s*([\d,]+)\s*€/kWh", texto)
+    base = {"c": "LUZIGAS", "pg": "100", "ft": "10", "ct": "100", "at": "0011", "u": url, "fp": LUZIGAS_FIN,
+            "m": "Fatura eletrónica e débito direto",
+            "tfi": "Contrato com período inicial de 12 meses, com renovação automática (ficha de informação normalizada)."}
+    ofertas = [{
+        **base, "id": f"SITE_LUZIGAS_{chave.upper()}_FIXO", "n": f"{nome} (preço fixo)", "f": "10000000",
+        "to": "Preço fixo. A página do tarifário permite escolher entre preço fixo e preço indexado ao mercado.",
+        "s": compacta([[tf[p], e] if i < 10 else 0 for i, p in enumerate(POTS)], 2),
+        "b": compacta([[tf[p], fv, vz] if 2 <= i < 10 else 0 for i, p in enumerate(POTS)], 3),
+        "t": compacta([[tf[p], pt, ch, vt] if i >= 10 else 0 for i, p in enumerate(POTS)], 4),
+    }]
+    if m_cgs and m_k:
+        cgs, k = num(m_cgs.group(1)), num(m_k.group(1))
+        if not (0 <= cgs < 0.05 and 0 < k < 0.1):
+            raise ValueError(f"Luzigás {nome}: K ou CGS fora do plausivel ({k}, {cgs})")
+        es = preco_formula(omie_ref, k, cgs, PERDAS_ERSE, 0, TAR_KWH["s"])
+        eb = preco_formula(omie_ref, k, cgs, PERDAS_ERSE, 0, TAR_KWH["b"])
+        et = preco_formula(omie_ref, k, cgs, PERDAS_ERSE, 0, TAR_KWH["t_alta"])
+        ofertas.append({
+            **base, "id": f"SITE_LUZIGAS_{chave.upper()}_INDEX", "n": f"{nome} (preço indexado)", "f": "10010000",
+            "to": f"Preço indexado ao mercado: energia = (OMIE + {k * 1000:g} €/MWh de margem + {cgs * 1000:g} €/MWh de custos do gestor do sistema) "
+                  f"× (1 + perdas) + tarifa de acesso às redes. A página do tarifário permite escolher entre preço fixo e preço indexado.",
+            "tap": "O preço da energia tem como referência o preço médio do OMIE no mês de faturação.",
+            "s": compacta([[tf[p], es[0]] if i < 10 else 0 for i, p in enumerate(POTS)], 2),
+            "b": compacta([[tf[p], eb[0], eb[1]] if 2 <= i < 10 else 0 for i, p in enumerate(POTS)], 3),
+            "t": compacta([[tf[p]] + et if i >= 10 else 0 for i, p in enumerate(POTS)], 4),
+            "ix": {"k": k * 1000, "cgs": cgs * 1000, "perdas": PERDAS_ERSE, "extra": 0, "fonte": "pagina"},
+        })
+    return ofertas
+
+
+# ---------------------------------------------------------------------------
 # Validacao de ofertas da ERSE contra o site do comercializador
 # ---------------------------------------------------------------------------
 def yes_site(html):
@@ -334,7 +499,7 @@ def preco_345(o):
 
 
 # ---------------------------------------------------------------------------
-def aplicar(ofertas, pedir=get, log=print):
+def aplicar(ofertas, pedir=get, log=print, omie_ref=None, pedir_json=None):
     """Junta as ofertas em falta e retira as que nao batem com o site. Devolve (ofertas, erros)."""
     erros, extra = [], []
     nomes_erse = {(o["c"], o["n"].lower()) for o in ofertas}
@@ -367,6 +532,26 @@ def aplicar(ofertas, pedir=get, log=print):
             log(f"site: Endesa {nome}")
         except Exception as e:
             erros.append(f"Endesa {nome}: {e}")
+
+    if omie_ref:
+        if not any(o["c"] == "MUON" for o in ofertas):
+            try:
+                novas = muon_ofertas((pedir_json or muon_api)(), omie_ref)
+                extra += novas
+                log(f"site: MUON ({len(novas)} ofertas indexadas, pela API do site)")
+            except Exception as e:
+                erros.append(f"MUON: {e}")
+        for chave, nome, url in LUZIGAS:
+            if ja_na_erse("LUZIGAS", nome):
+                continue
+            try:
+                novas = luzigas_ofertas(pedir(url).decode("utf-8", "replace"), chave, nome, url, omie_ref)
+                extra += novas
+                log(f"site: Luzigás {nome} ({len(novas)} ofertas)")
+            except Exception as e:
+                erros.append(f"Luzigás {nome}: {e}")
+    else:
+        log("site: sem OMIE de referencia, MUON e Luzigás ficam de fora")
 
     hoje = date.today().strftime("%d/%m/%Y")
     for x in extra:

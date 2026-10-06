@@ -35,7 +35,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261006j';
+  var VERSAO = '20261006k';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -54,14 +54,14 @@
   var NOMES = {
     TUR: 'Mercado regulado', ALFAENERGIA: 'Alfa Energia', AUDAX: 'Audax', COOP: 'Coopérnico', EDPC: 'EDP',
     END: 'Endesa', ENIPLENITUDE: 'Plenitude', EZUENERGIA: 'EZU Energia', GALP: 'Galp', GOLD: 'Goldenergy',
-    IBD: 'Iberdrola', IBELECTRA: 'Ibelectra', JAFPLUS: 'JAFplus', LUZBOA: 'Luzboa', LUZIGAS: 'Luzigás',
+    IBD: 'Iberdrola', IBELECTRA: 'Ibelectra', JAFPLUS: 'JAFplus', LUZBOA: 'Luzboa', LUZIGAS: 'Luzigás', MUON: 'MUON',
     MEOENERGIA: 'MEO Energia', NABALIAENERGIA: 'Nabalia Energia', NOSSAENERGIA: 'Nossa Energia', OENEO: 'Oeneo',
     PORTULOGOS: 'Portulogos', REPSOL: 'Repsol', YESENERGY: 'Yes Energy', ACCIONA: 'Acciona', ELERGONE: 'Elergone',
     LOGICA: 'Logica Energy', 'ZUG POWER': 'Zug Power', G9: 'G9', ROCKWATT: 'Rockwatt'
   };
   /* Logotipos em logos/<codigo em minusculas>.png. LARGOS: logotipos horizontais, recortados por CSS para mostrar so o simbolo no quadrado. */
   var LOGOS = { TUR: 1, ALFAENERGIA: 1, AUDAX: 1, COOP: 1, EDPC: 1, END: 1, ENIPLENITUDE: 1, EZUENERGIA: 1, GALP: 1, GOLD: 1, IBD: 1,
-    IBELECTRA: 1, JAFPLUS: 1, LUZBOA: 1, LUZIGAS: 1, MEOENERGIA: 1, NABALIAENERGIA: 1, NOSSAENERGIA: 1, OENEO: 1, PORTULOGOS: 1, REPSOL: 1, YESENERGY: 1, G9: 1 };
+    IBELECTRA: 1, JAFPLUS: 1, LUZBOA: 1, LUZIGAS: 1, MUON: 1, MEOENERGIA: 1, NABALIAENERGIA: 1, NOSSAENERGIA: 1, OENEO: 1, PORTULOGOS: 1, REPSOL: 1, YESENERGY: 1, G9: 1 };
   var LARGOS = { COOP: 1, END: 1, IBD: 1 };
   var NOMES_ERSE = {};
   function nomeDe(c) { return NOMES[c] || NOMES_ERSE[c] || c; }

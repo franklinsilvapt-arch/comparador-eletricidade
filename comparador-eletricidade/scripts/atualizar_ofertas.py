@@ -358,7 +358,7 @@ def main():
         try:
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             import fontes_extra
-            ofertas, erros_sites = fontes_extra.aplicar(ofertas)
+            ofertas, erros_sites = fontes_extra.aplicar(ofertas, omie_ref=dados.get("omie_ref"))
             for e in erros_sites:
                 print("FONTE DO SITE FALHOU:", e, file=sys.stderr)
             if erros_sites and not erro:
