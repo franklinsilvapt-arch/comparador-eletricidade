@@ -1,0 +1,16 @@
+name: Validar cálculo com o simulador da ERSE
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 7 * * 1"
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 comparador-eletricidade/scripts/validar_erse.py --tol 0.05
