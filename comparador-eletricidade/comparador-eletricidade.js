@@ -39,7 +39,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261010c';
+  var VERSAO = '20261010d';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -540,7 +540,7 @@
       itensF.push(S.tarifa === 'auto' ? 'Tarifa mais barata' : TARIFAS[S.tarifa]);
       if (fr0 && fr0.eredes) itensF.push('<b>' + S.vazio + '%</b> <span class="el-strip-s">em vazio</span>');
       if (meu && meu.o.id === 'FATURA' && meu.r.p) itensF.push('<b>' + num(meu.r.p[1], 4) + '€</b> <span class="el-strip-s">por kWh</span>', '<b>' + num(meu.r.p[0], 4) + '€</b> <span class="el-strip-s">por dia</span>');
-      else if (meu) itensF.push('<span class="el-strip-s">O teu tarifário:</span> ' + esc(meu.o.n));
+      else if (meu) itensF.push('<span class="el-strip-s">O teu tarifário:</span> ' + esc(meu.o.n), '<b>' + num(meu.r.p[1], 4) + '€</b> <span class="el-strip-s">por kWh</span>', '<b>' + num(meu.r.p[0], 4) + '€</b> <span class="el-strip-s">por dia</span>');
       else if (S.eurIn > 0 && S.eurTocado && S.kwhIn > 0) itensF.push('<b>' + eurInt(S.eurIn) + '</b> <span class="el-strip-s">pagos por mês</span>');
       faixa = '<div class="el-strip"><span class="el-strip-t">' + (fr0 && fr0.eredes ? 'O teu consumo' : fr0 ? 'A tua fatura' : 'A tua simulação') + '</span>' + itensF.map(function (x) { return '<span class="el-strip-i">' + x + '</span>'; }).join('') +
         '<span class="el-strip-acts"><button type="button" class="el-strip-b" data-cardtoggle>' + (fr0 ? 'Afinar a simulação' : 'Alterar os dados') + '</button>' + (fr0 ? '<button type="button" class="el-strip-b" data-fatura>' + (fr0.eredes ? 'Carregar outro ficheiro' : 'Carregar outra fatura') + '</button>' : '') + '</span></div>';
