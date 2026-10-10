@@ -209,12 +209,18 @@
     var pe = [], pp = [];
     /* Desconto em percentagem na propria linha do preco, ex. EDP "31 dias 0,2891 € 8,96 € 20% (-1,79 €) 7,17 €": o preco
        que a pessoa paga e o da linha menos essa percentagem (0,2313 €), que e o que a ERSE publica para a oferta. */
-    function descLinha(l) { var m = /(\d{1,2})\s*%\s*\(\s*-\s*\d/.exec(l); return m ? 1 - dec(m[1]) / 100 : 1; }
+    var RX_DESC = /(\d{1,2})\s*%\s*\(\s*-\s*\d/;
+    function descLinha(l, i) {
+      var m = RX_DESC.exec(l);
+      /* o pdf.js pode por a coluna do desconto numa linha propria, logo a seguir: aceita-se se essa linha for so o desconto */
+      if (!m && linhas[i + 1] && /^\s*\d{1,2}\s*%\s*\(\s*-\s*[\d.,]+\s*€?\s*\)\s*[\d.,]*\s*€?\s*(?:\d{1,2}\s*%)?\s*$/.test(linhas[i + 1])) m = RX_DESC.exec(linhas[i + 1]);
+      return m ? 1 - dec(m[1]) / 100 : 1;
+    }
     linhas.forEach(function (l, i) {
       var k = /\d[\d.]*\s*kWh\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l);
-      if (k && !/redes|acesso|imposto|IEC|tarifa social|regula[çc]/i.test(l)) { var v = dec(k[1]) * descLinha(l); if (v > 0.03 && v < 0.6) pe.push(Math.round(v * 1e4) / 1e4); }
+      if (k && !/redes|acesso|imposto|IEC|tarifa social|regula[çc]/i.test(l)) { var v = dec(k[1]) * descLinha(l, i); if (v > 0.03 && v < 0.6) pe.push(Math.round(v * 1e4) / 1e4); }
       var d = /\d{1,3}\s*dias\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l);
-      if (d && /pot[êe]ncia/i.test(l + ' ' + (linhas[i - 1] || '')) && !/redes|acesso|audiovisual/i.test(l)) { var w = dec(d[1]) * descLinha(l); if (w > 0.03 && w < 6) pp.push(Math.round(w * 1e4) / 1e4); }
+      if (d && /pot[êe]ncia/i.test(l + ' ' + (linhas[i - 1] || '')) && !/redes|acesso|audiovisual/i.test(l)) { var w = dec(d[1]) * descLinha(l, i); if (w > 0.03 && w < 6) pp.push(Math.round(w * 1e4) / 1e4); }
     });
     r.precoEnergia = pe.filter(function (v, i, a) { return a.indexOf(v) === i; });
     r.precoPotencia = pp.length ? pp[pp.length - 1] : null;
