@@ -134,13 +134,15 @@
     /* Dias do periodo de faturacao. Guarda-se tambem o intervalo de datas da linha da potencia, para filtrar acertos de periodos anteriores. */
     r.dias = null;
     var periodo = null;
-    m = /per[íi]odo\s+de\s+fatura[çc][ãa]o:?\s*([^\n]{6,60})/i.exec(T);
-    if (m) { var dsP = datasEm(m[1]); r.dias = diasEntre(dsP); if (r.dias) periodo = dsP; }
+    /* O periodo pode continuar na linha seguinte; para antes de "vencimento", "emissao" ou "limite de pagamento",
+       para nao confundir a data de fim do periodo com a data de vencimento (ex.: Ibelectra). */
+    m = /per[íi]odo\s+(?:de\s+)?(?:fatura[çc][ãa]o|consumo|leitura)s?:?\s*([^\n]{0,60}(?:\n[^\n]{0,60})?)/i.exec(T);
+    if (m) { var txtP = m[1].split(/venc|emiss|limite|pagamento|data\s+de/i)[0]; var dsP = datasEm(txtP); r.dias = diasEntre(dsP); if (r.dias) periodo = dsP; }
     var dPot = [];
     linhas.forEach(function (l, i) {
       if (/kVA/i.test(l) && /\bpot[êe]ncia\b/i.test(l) || (/\d\s*dias\b/i.test(l) && /\bpot[êe]ncia\b/i.test(linhas[i - 1] || ''))) {
         var d = /(\d{1,3})\s*dias/i.exec(l); if (d) dPot.push(+d[1]);
-        var ds = datasEm(l), n = diasEntre(ds);
+        var ds = datasEm(l.split(/venc|emiss|limite|pagamento/i)[0]), n = diasEntre(ds);
         if (n) { dPot.push(n); periodo = periodo ? [ds[0] < periodo[0] ? ds[0] : periodo[0], ds[1] > periodo[1] ? ds[1] : periodo[1]] : ds; }
       }
     });
