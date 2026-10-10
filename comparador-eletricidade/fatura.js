@@ -205,18 +205,25 @@
 
     /* Precos: energia por kWh (sem IVA) e potencia por dia */
     var pe = [], pp = [];
+    /* Desconto em percentagem na propria linha do preco, ex. EDP "31 dias 0,2891 € 8,96 € 20% (-1,79 €) 7,17 €": o preco
+       que a pessoa paga e o da linha menos essa percentagem (0,2313 €), que e o que a ERSE publica para a oferta. */
+    function descLinha(l) { var m = /(\d{1,2})\s*%\s*\(\s*-\s*\d/.exec(l); return m ? 1 - dec(m[1]) / 100 : 1; }
     linhas.forEach(function (l, i) {
       var k = /\d[\d.]*\s*kWh\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l);
-      if (k && !/redes|acesso|imposto|IEC|tarifa social|regula[çc]/i.test(l)) { var v = dec(k[1]); if (v > 0.03 && v < 0.6) pe.push(v); }
+      if (k && !/redes|acesso|imposto|IEC|tarifa social|regula[çc]/i.test(l)) { var v = dec(k[1]) * descLinha(l); if (v > 0.03 && v < 0.6) pe.push(Math.round(v * 1e4) / 1e4); }
       var d = /\d{1,3}\s*dias\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l);
-      if (d && /pot[êe]ncia/i.test(l + ' ' + (linhas[i - 1] || '')) && !/redes|acesso|audiovisual/i.test(l)) { var w = dec(d[1]); if (w > 0.03 && w < 6) pp.push(w); }
+      if (d && /pot[êe]ncia/i.test(l + ' ' + (linhas[i - 1] || '')) && !/redes|acesso|audiovisual/i.test(l)) { var w = dec(d[1]) * descLinha(l); if (w > 0.03 && w < 6) pp.push(Math.round(w * 1e4) / 1e4); }
     });
     r.precoEnergia = pe.filter(function (v, i, a) { return a.indexOf(v) === i; });
     r.precoPotencia = pp.length ? pp[pp.length - 1] : null;
     /* Alguns comercializadores (ex.: Endesa) faturam o acesso as redes em linhas separadas. Os precos da ERSE incluem-no,
        por isso soma-se o termo fixo (por dia) a potencia e o termo variavel (por kWh) a energia. Fica o valor mais recente. */
-    var rp = [], re_ = [];
+    var rp = [], re_ = [], redesAnuladas = false;
+    /* A EDP (DL 60/2019) mostra o acesso as redes a subtrair ("-31 dias ... -5,33 €") e a somar outra vez na linha seguinte:
+       anulam-se, o preco da linha principal ja inclui as redes e nao se soma nada. */
+    linhas.forEach(function (l) { if (/acesso\s+[àa]s?\s+redes/i.test(l) && /-\s*\d{1,3}\s*dias|-\s*\d[\d.]*\s*kWh|\s-\s*\d+[,.]\d{2}\s*€/.test(l)) redesAnuladas = true; });
     linhas.forEach(function (l) {
+      if (redesAnuladas) return;
       if (!/acesso\s+[àa]s?\s+redes|redes\s+SEN|tarifa\s+de\s+acesso/i.test(l) || /audiovisual|imposto|inclui o valor/i.test(l)) return;
       var d = /\d{1,3}\s*dias\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l); if (d) { var w = dec(d[1]); if (w > 0.01 && w < 3) rp.push(w); }
       var k = /\d[\d.]*\s*kWh\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l); if (k) { var v = dec(k[1]); if (v > 0.005 && v < 0.3) re_.push(v); }
