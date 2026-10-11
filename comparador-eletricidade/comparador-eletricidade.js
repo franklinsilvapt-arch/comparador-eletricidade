@@ -39,7 +39,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261011a';
+  var VERSAO = '20261011b';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -136,6 +136,21 @@
 
   /* ---------- Helpers ---------- */
   function esc(a) { return String(a == null ? '' : a).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  /* Link do botao: a pagina comercial da oferta (LinkOfertaCom da ERSE), salvo quando essa e um PDF, uma FAQ ou a pagina inicial
+     e a pagina de contratacao da oferta e mais especifica, ou quando esta e a pagina da campanha (ex.: EDP "campanha-vinte"). */
+  function linkFraco(u) { return !u || /\.pdf(\?|$)|\/faq|perguntas-frequentes|\/contact/i.test(u) || /^https?:\/\/[^\/]+\/?$/i.test(u); }
+  function host(u) { var m = /^https?:\/\/(?:www\.)?([^\/]+)/i.exec(u || ''); return m ? m[1].toLowerCase() : ''; }
+  var LINK_COM = null; /* por site, a pagina de ofertas mais usada nas suas ofertas (para quando a da oferta e um PDF) */
+  function linkOferta(o) {
+    if (o.ce && !linkFraco(o.ce) && (linkFraco(o.u) || /campanha|promo/i.test(o.ce) && !/campanha|promo/i.test(o.u || ''))) return o.ce;
+    if (!linkFraco(o.u)) return o.u;
+    if (/^https?:/i.test(o.web || '') && !linkFraco(o.web)) return o.web;
+    if (!LINK_COM && S.data) {
+      var cont = {}; LINK_COM = {};
+      S.data.ofertas.forEach(function (x) { var h = host(x.u); if (h && !linkFraco(x.u)) { var k = h + '|' + x.u; cont[k] = (cont[k] || 0) + 1; if (!LINK_COM[h] || cont[k] > cont[h + '|' + LINK_COM[h]]) LINK_COM[h] = x.u; } });
+    }
+    return (LINK_COM && LINK_COM[host(o.u)]) || o.u || o.ce || '';
+  }
   function url(u) { return /^https?:\/\//i.test(u || '') ? esc(u) : ''; }
   function milhar(s) { return s.replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
   function eur(v) { var p = Math.abs(v).toFixed(2).split('.'); return (v < 0 ? '-' : '') + milhar(p[0]) + ',' + p[1] + '€'; }
@@ -327,7 +342,7 @@
     else if (dif <= -0.5) poup = '<div class="el-poup el-neg">' + eur(-dif / 12) + ' a mais por mês</div><div class="dp-kpi-s">' + ref + '</div>';
     else poup = '<div class="el-poup is-ref">Igual ' + ref + '</div>';
 
-    var ek = energiaKpi(r), link = url(o.u);
+    var ek = energiaKpi(r), link = url(linkOferta(o));
     var cta = link ? '<a class="dp-btn" href="' + link + '" target="_blank" rel="nofollow noopener" data-stop>Ir para a ' + esc(o.c === 'TUR' ? 'SU Eletricidade' : nome) + ico(IC.out) + '</a>' : '';
 
     var h = '<div class="dp-c' + (aberto ? ' is-open' : '') + '" data-id="' + esc(o.id) + '"><div class="dp-c-main">' +
