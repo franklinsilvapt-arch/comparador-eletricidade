@@ -1,11 +1,9 @@
-caso 3.45 kVA, 1900 kWh: 22 resultados do simulador
+caso 3.45 kVA, 1900 kWh: 25 resultados do simulador
 campos do resultado: ['Id', 'Oferta', 'PrecoAcesso', 'PrecoDescontoCondicionado', 'PrecoEnergia', 'PrecoOutrosServicos', 'PrecoTaxasImpostos', 'PrecoTotal']
 campos da oferta: ['CodOferta', 'Comercializador', 'CondicoesGeraisContrato', 'ContactoComercialTel', 'ContactoWEBouMAIL', 'Contrat_Elect', 'Contrat_Presen', 'Contrat_Telef', 'Contratacao', 'DataFimOferta', 'DataInicioOferta', 'DebitoDirecto', 'DescontoCondicionado', 'DescontoCondicionadoTexto', 'DescontosFixosTexto', 'DescontosPercentuaisTexto', 'Descricao', 'DuracaoContrato', 'Energia100Verde', 'FamiliasNumerosas', 'Faturacao', 'FichaPadronizada', 'Fidelizacao', 'Gas100Verde', 'IndexacaoSpot', 'Logotipo', 'MeiosAtendimento', 'ModoContratacao', 'ModoPagamento', 'Nome', 'NovosClientes', 'OutrasCondicoes', 'OutrosServicos', 'OutrosServicosTexto', 'Pagamento', 'ParceriasObrigatorias', 'PrecoTermoEnergiaGNIfDual', 'PrecoTermoFixo', 'PrecoTermoFixoGNIfDual', 'PrecoTermoenergia', 'PrecoTermoenergia2', 'PrecoTermoenergia3', 'PrecosFixos', 'PrecosFixosGNIfDual', 'PrecosIndexados', 'PrecosIndexadosGNIfDual', 'RestricoesAdicionais', 'RestricoesAdicionaisTexto', 'RevisaoPrecos', 'RevisaodePrecos', 'Segmento', 'ServicosAdicionaisObrigatoriosTexto', 'ServicosAdicionaisOpcionaisTexto', 'TarifaSocial', 'TextoERSE', 'TipoContagem', 'TipoFaturacao', 'TipoFidelizacao', 'TipoFornecimento', 'TipoOferta', 'Url', 'UrlComercializador']
-caso 6.9 kVA, 5000 kWh: 22 resultados do simulador
-caso 4.6 kVA, 3000 kWh: 22 resultados do simulador
-caso 1.15 kVA, 1000 kWh: 22 resultados do simulador
-ofertas com desconto de novo cliente em que a ERSE conta o desconto: 12
+caso 6.9 kVA, 5000 kWh: 25 resultados do simulador
+caso 4.6 kVA, 3000 kWh: 25 resultados do simulador
+caso 1.15 kVA, 1000 kWh: 25 resultados do simulador
+ofertas com desconto de novo cliente em que a ERSE conta o desconto: 24
 ofertas com servicos obrigatorios comparadas sem o reembolso (a ERSE nao o conta): 8
-72 comparacoes, 2 fora da tolerancia de 0.05€
-[5, 5000, "REPSOL_11", "REPSOL", "LEVE DD + FE + Apoio Luz+", 1228.2, 1228.29, 1228.29, {"reemb": 31.95, "dNovo": 0, "serv": 83.88, "en": 740.0, "tf": 205.71}, {"r": [9.684, 0.02, 0.02, 2e-05], "cs": 83.88}, {"Id": "1", "PrecoAcesso": 428.91, "PrecoEnergia": 516.8, "PrecoTaxasImpostos": 214.39, "PrecoOutrosServicos": 68.2, "PrecoDescontoCondicionado": -0.1, "PrecoTotal": 1228.2}]
-[3, 3000, "REPSOL_11", "REPSOL", "LEVE DD + FE + Apoio Luz+", 810.29, 810.34, 810.34, {"reemb": 23.55, "dNovo": 0, "serv": 83.88, "en": 444.0, "tf": 163.92}, {"r": [9.684, 0.02, 0.02, 2e-05], "cs": 83.88}, {"Id": "1", "PrecoAcesso": 265.72, "PrecoEnergia": 342.2, "PrecoTaxasImpostos": 134.23, "PrecoOutrosServicos": 68.2, "PrecoDescontoCondicionado": -0.06, "PrecoTotal": 810.29}]
+84 comparacoes, 0 fora da tolerancia de 0.1€
