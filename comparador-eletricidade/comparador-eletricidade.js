@@ -39,7 +39,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261010d';
+  var VERSAO = '20261011a';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -413,6 +413,7 @@
     if (o.to) notas.push('<b>A oferta.</b> ' + esc(o.to));
     if (o.f.charAt(0) === '1' && o.tfi) notas.push('<b>Fidelização.</b> ' + esc(o.tfi));
     if (o.tr || o.dr) notas.push('<b>Restrições de adesão.</b> ' + esc([o.tr, o.dr].filter(Boolean).join(' ')));
+    if (o.aj && o.aj.n) notas.push('<b>Corrigido face à ERSE.</b> ' + esc(o.aj.n.join(' ')));
     if (o.ts || o.tos) notas.push('<b>Serviços adicionais.</b> ' + esc([o.ts, o.tos].filter(Boolean).join(' ')));
     if (o.trb) notas.push('<b>Descontos e reembolsos.</b> ' + esc(o.trb));
     if (o.ob) notas.push('<b>Outros benefícios.</b> ' + esc(o.ob));

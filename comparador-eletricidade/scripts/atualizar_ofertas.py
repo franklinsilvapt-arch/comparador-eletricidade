@@ -377,6 +377,14 @@ def main():
             aviso("FONTES DOS SITES FALHARAM:", e)
             erro = erro or e
         coms = sorted({o["c"] for o in ofertas})
+    # Descontos que o texto da oferta contradiz (parcelas para la de 12 meses, ofertas unicas como reembolso anual, etc.)
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import ajustes_descontos
+        aj = ajustes_descontos.ajustar(ofertas)
+        print(f"{len(aj)} ajustes aos descontos")
+    except Exception as e:
+        aviso("AJUSTES AOS DESCONTOS FALHARAM:", e)
     dados["logos"] = sorted(c for c in coms if os.path.exists(os.path.join(LOGOS, c.lower().replace(" ", "") + ".png")))
     dados["ofertas"] = ofertas
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

@@ -103,6 +103,8 @@ def main():
             if str(of.get("TipoContagem")) != "1" or cod not in ofertas:
                 continue
             o = ofertas[cod]
+            if o.get("aj"):  # compara com os descontos como a ERSE os tem, antes dos nossos ajustes
+                o = {**o, "r": o["aj"].get("r"), "d": o["aj"].get("d")}
             erse = float(r["PrecoTotal"])
             n0, n1 = nossa(P, o, i, kwh, False), nossa(P, o, i, kwh, True)
             if not n0:
