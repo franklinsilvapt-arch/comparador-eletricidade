@@ -1,9 +1,9 @@
-caso 3.45 kVA, 1900 kWh: 25 resultados do simulador
+caso 3.45 kVA, 1900 kWh: 24 resultados do simulador
 campos do resultado: ['Id', 'Oferta', 'PrecoAcesso', 'PrecoDescontoCondicionado', 'PrecoEnergia', 'PrecoOutrosServicos', 'PrecoTaxasImpostos', 'PrecoTotal']
 campos da oferta: ['CodOferta', 'Comercializador', 'CondicoesGeraisContrato', 'ContactoComercialTel', 'ContactoWEBouMAIL', 'Contrat_Elect', 'Contrat_Presen', 'Contrat_Telef', 'Contratacao', 'DataFimOferta', 'DataInicioOferta', 'DebitoDirecto', 'DescontoCondicionado', 'DescontoCondicionadoTexto', 'DescontosFixosTexto', 'DescontosPercentuaisTexto', 'Descricao', 'DuracaoContrato', 'Energia100Verde', 'FamiliasNumerosas', 'Faturacao', 'FichaPadronizada', 'Fidelizacao', 'Gas100Verde', 'IndexacaoSpot', 'Logotipo', 'MeiosAtendimento', 'ModoContratacao', 'ModoPagamento', 'Nome', 'NovosClientes', 'OutrasCondicoes', 'OutrosServicos', 'OutrosServicosTexto', 'Pagamento', 'ParceriasObrigatorias', 'PrecoTermoEnergiaGNIfDual', 'PrecoTermoFixo', 'PrecoTermoFixoGNIfDual', 'PrecoTermoenergia', 'PrecoTermoenergia2', 'PrecoTermoenergia3', 'PrecosFixos', 'PrecosFixosGNIfDual', 'PrecosIndexados', 'PrecosIndexadosGNIfDual', 'RestricoesAdicionais', 'RestricoesAdicionaisTexto', 'RevisaoPrecos', 'RevisaodePrecos', 'Segmento', 'ServicosAdicionaisObrigatoriosTexto', 'ServicosAdicionaisOpcionaisTexto', 'TarifaSocial', 'TextoERSE', 'TipoContagem', 'TipoFaturacao', 'TipoFidelizacao', 'TipoFornecimento', 'TipoOferta', 'Url', 'UrlComercializador']
-caso 6.9 kVA, 5000 kWh: 25 resultados do simulador
-caso 4.6 kVA, 3000 kWh: 25 resultados do simulador
-caso 1.15 kVA, 1000 kWh: 25 resultados do simulador
-ofertas com desconto de novo cliente em que a ERSE conta o desconto: 24
+caso 6.9 kVA, 5000 kWh: 24 resultados do simulador
+caso 4.6 kVA, 3000 kWh: 24 resultados do simulador
+caso 1.15 kVA, 1000 kWh: 24 resultados do simulador
+ofertas com desconto de novo cliente em que a ERSE conta o desconto: 18
 ofertas com servicos obrigatorios comparadas sem o reembolso (a ERSE nao o conta): 8
-84 comparacoes, 0 fora da tolerancia de 0.1€
+80 comparacoes, 0 fora da tolerancia de 0.1€
