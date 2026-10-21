@@ -160,9 +160,9 @@
     /* Bi-horaria */
     temReemb = false;
     var lb = bi.slice(0, 10).map(function (x) { return linhaCom(x, 'b'); });
-    out.bi = tabela(['Fornecedor', 'Fatura/mês', 'Fora de vazio / vazio', 'Potência/dia'], lb) +
+    out.bi = tabela(['Fornecedor', 'Fatura/mês', 'Preço kWh', 'Potência/dia'], lb) +
       nota((temReemb ? '*A fatura já conta com o desconto ou reembolso permanente da oferta<br>' : '') +
-        'Preços sem IVA. Fatura mensal com IVA, impostos e taxas, para 6,9 kVA, 5.000 kWh por ano e 40% do consumo em vazio. As 10 ofertas de preço fixo mais baratas, uma por fornecedor<br>' + fonte(d));
+        'Preço do kWh fora de vazio / em vazio. Preços sem IVA. Fatura mensal com IVA, impostos e taxas, para 6,9 kVA, 5.000 kWh por ano e 40% do consumo em vazio. As 10 ofertas de preço fixo mais baratas, uma por fornecedor<br>' + fonte(d));
 
     /* Mercado regulado */
     if (turS) {
@@ -215,8 +215,8 @@
     var faq = '';
     if (m && turS) {
       faq += '<p><strong>Quanto custa 1 kWh em Portugal?</strong></p><p>Na tarifa simples, o kWh de eletricidade custa entre ' + kwhEur(Math.min.apply(null, simples.map(function (x) { return x.r.p[1]; }))) +
-        ' e ' + kwhEur(Math.max.apply(null, simples.map(function (x) { return x.r.p[1]; }))) + ' sem IVA nas ofertas de preço fixo do mercado livre, e ' + kwhEur(turS.p[1]) +
-        ' no mercado regulado. Com IVA a 23%, 1 kWh ao preço do mercado regulado custa ' + kwhEur(turS.p[1] * 1.23) + '. Nos primeiros 200 kWh de cada 30 dias, com IVA a 6%, custa ' + kwhEur(turS.p[1] * 1.06) + '.</p>';
+        ' e ' + kwhEur(Math.max.apply(null, simples.map(function (x) { return x.r.p[1]; }))) + ' sem IVA nas ofertas de preço fixo do mercado livre. No mercado regulado custa ' + kwhEur(turS.p[1]) +
+        '. Com IVA a 23%, 1 kWh ao preço do mercado regulado custa ' + kwhEur(turS.p[1] * 1.23) + '. Nos primeiros 200 kWh de cada 30 dias, com IVA a 6%, custa ' + kwhEur(turS.p[1] * 1.06) + '.</p>';
     }
     FAQ_COMS.forEach(function (c) {
       var s = porComS[c];
