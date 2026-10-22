@@ -116,7 +116,8 @@
       '</tr></thead><tbody>' + linhas.map(function (l) { return '<tr>' + l.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>'; }).join('') +
       '</tbody></table></div>';
   }
-  function nota(t) { return '<p><sup>' + t + '</sup></p>'; }
+  /* a legenda fica num paragrafo do rich text a seguir ao embed (como nos outros artigos): aqui so o conteudo */
+  function nota(t) { return t; }
   function fonte(d) {
     return 'Fonte: <a href="https://simuladorprecos.erse.pt/" target="_blank">ERSE, ofertas comerciais</a> e sites dos comercializadores, dados de ' + data(d.atualizado);
   }
@@ -166,15 +167,15 @@
     /* Tarifa simples */
     marcas = {};
     var ls = simples.map(function (x) { return linhaCom(x, 's'); });
-    out.simples = tabela(['Fornecedor', 'Fatura/mês', 'Preço kWh', 'Potência/dia'], ls) +
-      nota(notasMarcas() +
+    out.simples = tabela(['Fornecedor', 'Fatura/mês', 'Preço kWh', 'Potência/dia'], ls);
+    out.simples_nota = nota(notasMarcas() +
         'Preços do kWh e da potência sem IVA. Fatura mensal com IVA, impostos e taxas, para 6,9 kVA e 5.000 kWh por ano. Oferta de preço fixo mais barata de cada fornecedor, sem restrições de adesão e sem contar créditos de boas-vindas pagos na fatura<br>' + fonte(d));
 
     /* Bi-horaria */
     marcas = {};
     var lb = bi.slice(0, 10).map(function (x) { return linhaCom(x, 'b'); });
-    out.bi = tabela(['Fornecedor', 'Fatura/mês', 'Preço kWh', 'Potência/dia'], lb) +
-      nota(notasMarcas() +
+    out.bi = tabela(['Fornecedor', 'Fatura/mês', 'Preço kWh', 'Potência/dia'], lb);
+    out.bi_nota = nota(notasMarcas() +
         'Preço do kWh fora de vazio / em vazio. Preços sem IVA. Fatura mensal com IVA, impostos e taxas, para 6,9 kVA, 5.000 kWh por ano e 40% do consumo em vazio. As 10 ofertas de preço fixo mais baratas, uma por fornecedor<br>' + fonte(d));
 
     /* Mercado regulado */
@@ -182,8 +183,8 @@
       var lr = [['Simples', eur(turS.mes), kwhEur(turS.p[1])]];
       if (turB) lr.push(['Bi-horária', eur(turB.mes), kwhEur(turB.p[1]) + ' fora de vazio<br>' + kwhEur(turB.p[2]) + ' em vazio']);
       if (turT) lr.push(['Tri-horária', eur(turT.mes), kwhEur(turT.p[1]) + ' ponta<br>' + kwhEur(turT.p[2]) + ' cheias<br>' + kwhEur(turT.p[3]) + ' vazio']);
-      out.regulada = tabela(['Opção horária', 'Fatura/mês', 'Preço kWh'], lr) +
-        nota('Preços sem IVA. Potência de 6,9 kVA a ' + kwhEur(turS.p[0]) + ' por dia sem IVA. Fatura com IVA, impostos e taxas, para 5.000 kWh por ano (40% em vazio e 20% em ponta nas opções bi e tri-horária). Preços em vigor de ' +
+      out.regulada = tabela(['Opção horária', 'Fatura/mês', 'Preço kWh'], lr);
+      out.regulada_nota = nota('Preços sem IVA. Potência de 6,9 kVA a ' + kwhEur(turS.p[0]) + ' por dia sem IVA. Fatura com IVA, impostos e taxas, para 5.000 kWh por ano (40% em vazio e 20% em ponta nas opções bi e tri-horária). Preços em vigor de ' +
           esc(tur.ini || '') + (tur.fim ? ' a ' + esc(tur.fim) : '') + '<br>Fonte: <a href="https://www.erse.pt/atividade/regulacao/tarifas-e-precos-eletricidade/" target="_blank">ERSE</a>, dados de ' + data(d.atualizado));
     }
 
@@ -203,8 +204,8 @@
         num(OMIE.media, 2).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '€ por MWh, isto é, ' + kwhEur(OMIE.media / 1000) + ' por kWh antes de perdas na rede, margem do comercializador e tarifas de acesso. ' +
         'Com esse preço, a tarifa indexada mais barata (' + esc(bi0.o.n) + ', da ' + esc(nome(bi0.o.c, d)) + ') daria uma fatura de ' + eur(bi0.r.mes) + ' por mês, ' +
         (dif >= 0 ? eur(dif) + ' acima' : eur(-dif) + ' abaixo') + ' da oferta de preço fixo mais barata.' + amplitude() + '</p>' +
-        tabela(['Tarifa indexada', 'Fatura/mês', 'Preço kWh'], li) +
-        nota('Preço do kWh estimado com a média do OMIE dos últimos 30 dias, sem IVA. Fatura com IVA, impostos e taxas, para 6,9 kVA e 5.000 kWh por ano na tarifa simples. O valor real muda todos os meses<br>Fonte: <a href="https://www.omie.es/pt/market-results/daily/daily-market/day-ahead-price" target="_blank">OMIE</a> e ' +
+        tabela(['Tarifa indexada', 'Fatura/mês', 'Preço kWh'], li);
+      out.indexadas_nota = nota('Preço do kWh estimado com a média do OMIE dos últimos 30 dias, sem IVA. Fatura com IVA, impostos e taxas, para 6,9 kVA e 5.000 kWh por ano na tarifa simples. O valor real muda todos os meses<br>Fonte: <a href="https://www.omie.es/pt/market-results/daily/daily-market/day-ahead-price" target="_blank">OMIE</a> e ' +
           '<a href="https://simuladorprecos.erse.pt/" target="_blank">ERSE</a>, dados de ' + data(OMIE.ate));
     }
 
@@ -247,6 +248,17 @@
       var g = gama[o.c] || (gama[o.c] = { n: 0, min: 9, max: 0 });
       g.n++; g.min = Math.min(g.min, p[1]); g.max = Math.max(g.max, p[1]);
     });
+    var bar = null;
+    d.ofertas.forEach(function (o) {
+      if (!fixa(o) || expirada(o) || o.f.charAt(4) === '1') return;
+      var r = calc(o, CASA.i, CASA.kwh, 's');
+      if (r && (!bar || r.p[1] < bar.r.p[1])) bar = { o: o, r: r };
+    });
+    if (bar && m) {
+      faq += '<p><strong>Qual é o kWh mais barato em Portugal?</strong></p><p>Nas ofertas de preço fixo, o kWh mais barato na tarifa simples é o da ' + esc(bar.o.n) + ', da ' + esc(nome(bar.o.c, d)) + cond(bar.o) + ': ' +
+        kwhEur(bar.r.p[1]) + ' sem IVA. ' + (bar.o.id === m.o.id ? 'É também a oferta com a fatura mais barata: com 6,9 kVA, a potência custa ' + kwhEur(bar.r.p[0]) + ' por dia.' :
+        'Porém, com 6,9 kVA e 5.000 kWh por ano, a fatura mais barata é a da ' + esc(m.o.n) + ', da ' + esc(nome(m.o.c, d)) + ' (' + eur(m.r.mes) + ' por mês contra ' + eur(bar.r.mes) + ').') + '</p>';
+    }
     FAQ_COMS.forEach(function (c) {
       var s = porComS[c];
       if (!s) return;
@@ -292,10 +304,44 @@
         var els = document.querySelectorAll('[data-lf-kwh]');
         for (var i = 0; i < els.length; i++) {
           var k = els[i].getAttribute('data-lf-kwh');
-          if (out[k]) { if (k === 'data') els[i].textContent = out[k]; else els[i].innerHTML = out[k]; }
+          if (!out[k]) continue;
+          if (k === 'data') { els[i].textContent = out[k]; continue; }
+          els[i].innerHTML = out[k];
+          /* legenda: o paragrafo com <sup> logo a seguir ao embed */
+          if (out[k + '_nota']) {
+            var w = els[i].closest('.w-embed, [data-rt-embed-type]') || els[i], nx = w.nextElementSibling;
+            if (nx && nx.tagName === 'P' && nx.querySelector('sup')) nx.innerHTML = '<sup>' + out[k + '_nota'] + '</sup>';
+          }
         }
+        faqSchema();
       });
     });
+  }
+  /* As perguntas dentro do embed nao sao lidas pelo faq-schema.js do site: junta-as ao FAQPage da pagina
+     (ou cria um, se ainda nao existir quando a pagina acabar de carregar). */
+  function faqSchema() {
+    function tentar(ultima) {
+      var box = document.querySelector('[data-lf-kwh="faq"]');
+      if (!box) return;
+      var qs = [], ps = box.querySelectorAll('p');
+      for (var i = 0; i < ps.length - 1; i++) {
+        var st = ps[i].querySelector('strong');
+        if (st && st.textContent.trim() === ps[i].textContent.trim() && !ps[i + 1].querySelector('strong'))
+          qs.push({ '@type': 'Question', name: st.textContent.trim(), acceptedAnswer: { '@type': 'Answer', text: ps[i + 1].textContent.trim() } });
+      }
+      if (!qs.length) return;
+      var sc = null, all = document.querySelectorAll('script[type="application/ld+json"]');
+      for (var j = 0; j < all.length; j++) if (/"FAQPage"/.test(all[j].textContent)) sc = all[j];
+      if (!sc && !ultima) return setTimeout(function () { tentar(true); }, 1500);
+      var data = sc ? JSON.parse(sc.textContent) : { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: [] };
+      var tem = {};
+      data.mainEntity.forEach(function (q) { tem[q.name] = 1; });
+      data.mainEntity = qs.filter(function (q) { return !tem[q.name]; }).concat(data.mainEntity);
+      if (!sc) { sc = document.createElement('script'); sc.type = 'application/ld+json'; document.head.appendChild(sc); }
+      sc.textContent = JSON.stringify(data);
+    }
+    if (document.readyState === 'complete') setTimeout(function () { tentar(false); }, 500);
+    else window.addEventListener('load', function () { setTimeout(function () { tentar(false); }, 500); });
   }
   if (window.__lfKwhInit) return;
   window.__lfKwhInit = true;
