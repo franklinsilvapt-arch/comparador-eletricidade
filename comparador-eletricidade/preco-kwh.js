@@ -79,13 +79,19 @@
   }
 
   /* ---------- Selecao ---------- */
+  function novos(o) { return o.f.charAt(7) === '1'; }
+  function fideliza(o) { return o.f.charAt(0) === '1'; }
+  function estimado(o) { return /Para efeito deste simulador/i.test(o.to || ''); }
+  /* ofertas com data de fim ja passada (o ficheiro da ERSE pode ter alguns dias) ficam de fora */
+  var HOJE = new Date().toISOString().slice(0, 10);
+  function expirada(o) { var m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(o.fim || ''); return m ? m[3] + '-' + m[2] + '-' + m[1] < HOJE : false; }
   function fixa(o) { return o.c !== 'TUR' && o.f.charAt(3) === '0' && o.f.charAt(2) === '0'; }
   function indexada(o) { return o.c !== 'TUR' && o.f.charAt(3) === '1' && o.f.charAt(2) === '0'; }
   /* a oferta mais barata (fatura anual) de cada comercializador, ordenadas da mais barata para a mais cara */
   function melhores(d, filtro, perfil, k) {
     var por = {};
     d.ofertas.forEach(function (o) {
-      if (!filtro(o)) return;
+      if (!filtro(o) || expirada(o)) return;
       var r = calc(o, perfil.i, perfil.kwh, k);
       if (!r) return;
       if (!por[o.c] || r.total < por[o.c].r.total) por[o.c] = { o: o, r: r };
@@ -130,11 +136,18 @@
     var turS = tur && calc(tur, CASA.i, CASA.kwh, 's');
     var turB = tur && calc(tur, CASA.i, CASA.kwh, 'b');
     var turT = tur && calc(tur, CASA.i, CASA.kwh, 't');
-    var temReemb = false;
+    var marcas = {};
+    var NOTAS = { 1: 'A fatura já conta com o desconto ou reembolso permanente da oferta', 2: 'Só para novos clientes. O preço pode incluir um desconto temporário: confirma as condições no site do fornecedor',
+      3: 'Preço médio estimado pela ERSE: o preço do kWh depende das horas em que gastas', 4: 'Com fidelização' };
+    function notasMarcas() { var t = ''; [1, 2, 3, 4].forEach(function (n) { if (marcas[n]) t += n + '. ' + NOTAS[n] + '<br>'; }); return t; }
+    function cond(o) { return novos(o) ? ' (só para novos clientes)' : ''; }
 
     function linhaCom(x, k) {
-      var r = x.r, est = r.reemb > 0.5 ? '*' : '';
-      if (est) temReemb = true;
+      var r = x.r, est = '';
+      if (r.reemb > 0.5) { est += '<sup>1</sup>'; marcas[1] = 1; }
+      if (novos(x.o)) { est += '<sup>2</sup>'; marcas[2] = 1; }
+      if (estimado(x.o)) { est += '<sup>3</sup>'; marcas[3] = 1; }
+      if (fideliza(x.o)) { est += '<sup>4</sup>'; marcas[4] = 1; }
       var cel = [link(x.o, nome(x.o.c, d)) + est + '<br>' + esc(x.o.n), eur(r.mes)];
       if (k === 's') cel.push(kwhEur(r.p[1]));
       else cel.push(kwhEur(r.p[1]) + ' / ' + kwhEur(r.p[2]));
@@ -145,23 +158,23 @@
     /* Resumo (paragrafo de abertura) */
     var m = simples[0];
     if (m && turS) {
-      out.resumo = '<p>Hoje, a oferta de preço fixo mais barata para uma família de quatro pessoas é a ' + esc(m.o.n) + ', da ' + esc(nome(m.o.c, d)) +
+      out.resumo = '<p>Hoje, a oferta de preço fixo mais barata para uma família de quatro pessoas é a ' + esc(m.o.n) + ', da ' + esc(nome(m.o.c, d)) + cond(m.o) +
         ': o kWh custa ' + kwhEur(m.r.p[1]) + ' sem IVA e a fatura fica em ' + eur(m.r.mes) + ' por mês. No mercado regulado, o kWh custa ' +
         kwhEur(turS.p[1]) + ' e a mesma família paga ' + eur(turS.mes) + ' por mês.</p>';
     }
 
     /* Tarifa simples */
-    temReemb = false;
+    marcas = {};
     var ls = simples.map(function (x) { return linhaCom(x, 's'); });
     out.simples = tabela(['Fornecedor', 'Fatura/mês', 'Preço kWh', 'Potência/dia'], ls) +
-      nota((temReemb ? '*A fatura já conta com o desconto ou reembolso permanente da oferta<br>' : '') +
-        'Preços do kWh e da potência sem IVA. Fatura mensal com IVA, impostos e taxas, para 6,9 kVA e 5.000 kWh por ano. Oferta de preço fixo mais barata de cada fornecedor, sem restrições de adesão nem descontos de boas-vindas<br>' + fonte(d));
+      nota(notasMarcas() +
+        'Preços do kWh e da potência sem IVA. Fatura mensal com IVA, impostos e taxas, para 6,9 kVA e 5.000 kWh por ano. Oferta de preço fixo mais barata de cada fornecedor, sem restrições de adesão e sem contar créditos de boas-vindas pagos na fatura<br>' + fonte(d));
 
     /* Bi-horaria */
-    temReemb = false;
+    marcas = {};
     var lb = bi.slice(0, 10).map(function (x) { return linhaCom(x, 'b'); });
     out.bi = tabela(['Fornecedor', 'Fatura/mês', 'Preço kWh', 'Potência/dia'], lb) +
-      nota((temReemb ? '*A fatura já conta com o desconto ou reembolso permanente da oferta<br>' : '') +
+      nota(notasMarcas() +
         'Preço do kWh fora de vazio / em vazio. Preços sem IVA. Fatura mensal com IVA, impostos e taxas, para 6,9 kVA, 5.000 kWh por ano e 40% do consumo em vazio. As 10 ofertas de preço fixo mais baratas, uma por fornecedor<br>' + fonte(d));
 
     /* Mercado regulado */
@@ -174,6 +187,13 @@
           esc(tur.ini || '') + (tur.fim ? ' a ' + esc(tur.fim) : '') + '<br>Fonte: <a href="https://www.erse.pt/atividade/regulacao/tarifas-e-precos-eletricidade/" target="_blank">ERSE</a>, dados de ' + data(d.atualizado));
     }
 
+    function amplitude() {
+      var se = (OMIE.serie || []).filter(function (x) { return x.d >= OMIE.de && x.d <= OMIE.ate; });
+      if (se.length < 10) return '';
+      var mn = se[0], mx = se[0];
+      se.forEach(function (x) { if (x.m < mn.m) mn = x; if (x.m > mx.m) mx = x; });
+      return ' Nesses 30 dias, a média diária do OMIE variou entre ' + num(mn.m, 2) + '€ por MWh (' + data(mn.d) + ') e ' + num(mx.m, 2) + '€ por MWh (' + data(mx.d) + ').';
+    }
     /* Indexadas */
     if (OMIE && idx.length && m) {
       var bi0 = idx[0];
@@ -182,7 +202,7 @@
       out.indexadas = '<p>Entre ' + data(OMIE.de) + ' e ' + data(OMIE.ate) + ', o preço médio da eletricidade no mercado grossista (OMIE) para Portugal foi de ' +
         num(OMIE.media, 2).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '€ por MWh, isto é, ' + kwhEur(OMIE.media / 1000) + ' por kWh antes de perdas na rede, margem do comercializador e tarifas de acesso. ' +
         'Com esse preço, a tarifa indexada mais barata (' + esc(bi0.o.n) + ', da ' + esc(nome(bi0.o.c, d)) + ') daria uma fatura de ' + eur(bi0.r.mes) + ' por mês, ' +
-        (dif >= 0 ? eur(dif) + ' acima' : eur(-dif) + ' abaixo') + ' da oferta de preço fixo mais barata.</p>' +
+        (dif >= 0 ? eur(dif) + ' acima' : eur(-dif) + ' abaixo') + ' da oferta de preço fixo mais barata.' + amplitude() + '</p>' +
         tabela(['Tarifa indexada', 'Fatura/mês', 'Preço kWh'], li) +
         nota('Preço do kWh estimado com a média do OMIE dos últimos 30 dias, sem IVA. Fatura com IVA, impostos e taxas, para 6,9 kVA e 5.000 kWh por ano na tarifa simples. O valor real muda todos os meses<br>Fonte: <a href="https://www.omie.es/pt/market-results/daily/daily-market/day-ahead-price" target="_blank">OMIE</a> e ' +
           '<a href="https://simuladorprecos.erse.pt/" target="_blank">ERSE</a>, dados de ' + data(OMIE.ate));
@@ -192,7 +212,7 @@
     var par = null;
     for (var a = 0; a < simples.length && a < 10; a++) for (var b = 0; b < simples.length && b < 10; b++) {
       var A = simples[a], B = simples[b];
-      if (A.r.p[1] < B.r.p[1] && A.r.mes > B.r.mes + 1 && A.r.reemb < 0.5 && B.r.reemb < 0.5 && (!par || A.r.mes - B.r.mes > par[0].r.mes - par[1].r.mes)) par = [A, B];
+      if (A.r.p[1] < B.r.p[1] && A.r.mes > B.r.mes + 1 && A.r.reemb < 0.5 && B.r.reemb < 0.5 && !estimado(A.o) && !estimado(B.o) && !novos(A.o) && !novos(B.o) && (!par || A.r.mes - B.r.mes > par[0].r.mes - par[1].r.mes)) par = [A, B];
     }
     if (par) {
       var A1 = par[0], B1 = par[1];
@@ -205,7 +225,7 @@
     if (peq.length && turS && tur) {
       var tp = calc(tur, PEQ.i, PEQ.kwh, 's');
       out.pequena = '<p>Numa casa mais pequena, com 3,45 kVA e 1.900 kWh por ano (o perfil de um casal sem filhos), a oferta de preço fixo mais barata é a ' + esc(peq[0].o.n) + ', da ' +
-        esc(nome(peq[0].o.c, d)) + ', com uma fatura de ' + eur(peq[0].r.mes) + ' por mês. No mercado regulado, a mesma casa paga ' + (tp ? eur(tp.mes) : '') + ' por mês.</p>';
+        esc(nome(peq[0].o.c, d)) + cond(peq[0].o) + ', com uma fatura de ' + eur(peq[0].r.mes) + ' por mês. No mercado regulado, a mesma casa paga ' + (tp ? eur(tp.mes) : '') + ' por mês.</p>';
     }
 
     /* Perguntas frequentes por comercializador */
@@ -225,6 +245,8 @@
       faq += '<p><strong>Quanto custa 1 kWh na ' + esc(n) + '?</strong></p><p>Na oferta mais barata da ' + esc(n) + ' (' + esc(s.o.n) + '), o kWh custa ' + kwhEur(s.r.p[1]) +
         ' sem IVA na tarifa simples, ou ' + kwhEur(s.r.p[1] * 1.23) + ' com IVA a 23%' +
         (s.r.reemb > 0.5 ? ', antes do desconto permanente que a oferta dá na fatura' : '') +
+        (estimado(s.o) ? ' (preço médio estimado pela ERSE, que depende das horas em que gastas)' : '') +
+        (novos(s.o) ? '. A oferta é só para novos clientes e o preço pode incluir um desconto temporário' : '') +
         (bb ? '. Na bi-horária' + (bb.o.id === s.o.id ? '' : ' (' + esc(bb.o.n) + ')') + ', custa ' + kwhEur(bb.r.p[1]) + ' fora de vazio e ' + kwhEur(bb.r.p[2]) + ' em vazio' : '') +
         '. Com 6,9 kVA, a potência custa ' + kwhEur(s.r.p[0]) + ' por dia e uma família que gasta 5.000 kWh por ano paga ' + eur(s.r.mes) + ' por mês.</p>';
     });
