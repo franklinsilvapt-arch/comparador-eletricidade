@@ -311,6 +311,7 @@
           if (out[k + '_nota']) {
             var w = els[i].closest('.w-embed, [data-rt-embed-type]') || els[i], nx = w.nextElementSibling;
             if (nx && nx.tagName === 'P' && nx.querySelector('sup')) nx.innerHTML = '<sup>' + out[k + '_nota'] + '</sup>';
+            else els[i].innerHTML += '<p><sup>' + out[k + '_nota'] + '</sup></p>'; /* estrutura antiga: legenda dentro do embed */
           }
         }
         faqSchema();
