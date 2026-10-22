@@ -238,11 +238,21 @@
         ' e ' + kwhEur(Math.max.apply(null, simples.map(function (x) { return x.r.p[1]; }))) + ' sem IVA nas ofertas de preço fixo do mercado livre. No mercado regulado custa ' + kwhEur(turS.p[1]) +
         '. Com IVA a 23%, 1 kWh ao preço do mercado regulado custa ' + kwhEur(turS.p[1] * 1.23) + '. Nos primeiros 200 kWh de cada 30 dias, com IVA a 6%, custa ' + kwhEur(turS.p[1] * 1.06) + '.</p>';
     }
+    /* todas as ofertas de preco fixo de cada comercializador (simples, 6,9 kVA): quantas sao e entre que precos */
+    var gama = {};
+    d.ofertas.forEach(function (o) {
+      if (!fixa(o) || expirada(o) || o.f.charAt(4) === '1') return;
+      var p = o.s && o.s[CASA.i];
+      if (!p) return;
+      var g = gama[o.c] || (gama[o.c] = { n: 0, min: 9, max: 0 });
+      g.n++; g.min = Math.min(g.min, p[1]); g.max = Math.max(g.max, p[1]);
+    });
     FAQ_COMS.forEach(function (c) {
       var s = porComS[c];
       if (!s) return;
-      var n = nome(c, d), bb = porComB[c];
-      faq += '<p><strong>Quanto custa 1 kWh na ' + esc(n) + '?</strong></p><p>Na oferta mais barata da ' + esc(n) + ' (' + esc(s.o.n) + '), o kWh custa ' + kwhEur(s.r.p[1]) +
+      var n = nome(c, d), bb = porComB[c], g = gama[c];
+      var intro = g && g.n > 1 ? 'A ' + esc(n) + ' tem ' + g.n + ' ofertas de preço fixo sem serviços obrigatórios, com o kWh da tarifa simples entre ' + kwhEur(g.min) + ' e ' + kwhEur(g.max) + ' sem IVA. ' : '';
+      faq += '<p><strong>Quanto custa 1 kWh na ' + esc(n) + '?</strong></p><p>' + intro + 'Na oferta com a fatura mais barata (' + esc(s.o.n) + '), o kWh custa ' + kwhEur(s.r.p[1]) +
         ' sem IVA na tarifa simples, ou ' + kwhEur(s.r.p[1] * 1.23) + ' com IVA a 23%' +
         (s.r.reemb > 0.5 ? ', antes do desconto permanente que a oferta dá na fatura' : '') +
         (estimado(s.o) ? ' (preço médio estimado pela ERSE, que depende das horas em que gastas)' : '') +
