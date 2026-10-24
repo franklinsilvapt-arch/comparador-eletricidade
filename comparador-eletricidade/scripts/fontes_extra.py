@@ -345,9 +345,19 @@ def muon_ofertas(dados, omie_ref):
     if dados.get("status") != "ok" or not dados.get("tarifas"):
         raise ValueError("MUON: resposta da API sem tarifas")
     ofertas = []
+    # A API devolve todas as versoes de cada tarifa, incluindo versoes antigas (versaoRecente=false) que vem
+    # com os termos de potencia a zero. Fica so a versao mais recente de cada nome de tarifa.
+    recentes = {}
     for t in dados["tarifas"]:
         if not t.get("ativa") or t.get("tipoAdesao") != "DOMESTICO" or t.get("social"):
             continue
+        if t.get("versaoRecente") is False:
+            continue
+        nome = re.sub(r"\s+", " ", t["nomeTarifa"]).strip()
+        chave = (nome, str(t.get("dataVigor") or ""), str(t.get("versao") or ""))
+        if nome not in recentes or chave > recentes[nome][0]:
+            recentes[nome] = (chave, t)
+    for _, t in recentes.values():
         nome = re.sub(r"\s+", " ", t["nomeTarifa"]).strip()
         if not t.get("indexada"):
             raise ValueError(f"MUON {nome}: tarifa de preco fixo sem precos de energia na API (formato novo?)")
