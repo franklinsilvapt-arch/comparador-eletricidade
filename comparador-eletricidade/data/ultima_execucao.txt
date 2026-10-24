@@ -1,2 +1,2 @@
-2026-10-24T11:03:33 ficheiro ERSE de 2026-10-19, 205 ofertas, 10 dos sites
-FONTE DO SITE FALHOU: MUON: MUON Muon Indexado Casa Verde DD: termos de potencia em falta ou fora do plausivel: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+2026-10-24T11:24:14 ficheiro ERSE de 2026-10-19, 207 ofertas, 12 dos sites
+sem avisos
