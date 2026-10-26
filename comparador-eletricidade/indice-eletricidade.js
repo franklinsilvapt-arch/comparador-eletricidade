@@ -5,7 +5,6 @@
 (function () {
   var SRC = (document.currentScript && document.currentScript.src) || "";
   var BASE = SRC ? SRC.replace(/[^\/]*(\?.*)?$/, "") : "https://franklinsilvapt-arch.github.io/comparador-eletricidade/comparador-eletricidade/";
-  var KIT_IMG = "https://cdn.jsdelivr.net/gh/pedrofintech/lf-site-assets@63c25df227931cfeb49da2121df5719c1107cc46/kit/img/illustration-chart.png";
   var MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
   var MES_CURTO = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
@@ -23,21 +22,21 @@
     function a(img, label, nome, href) {
       return '<a class="lfk-author" href="' + href + '"><span class="lfk-author-img"><img src="' + img + '" alt="' + nome + '"></span><span><span class="lfk-author-sub">' + label + '</span><span class="lfk-author-name">' + nome + "</span></span></a>";
     }
-    return '<div class="lfk-row">' +
+    return '<div class="lfk-row" style="justify-content:center;gap:1.5rem 2rem">' +
       a("https://cdn.prod.website-files.com/67922c46c9da6bf5d9bfdf20/683ee0ae5bc67fe0ef48466e_franklin-silva.avif", "Autor", "Franklin Silva", "https://www.literaciafinanceira.pt/autores/franklin-silva") +
       a("https://cdn.prod.website-files.com/67922c46c9da6bf5d9bfdf20/683ee0f9b80a20ec1767fab5_Pedro-Braz.avif", "Revisor", "Pedro Braz", "https://www.literaciafinanceira.pt/autores/pedro-braz") +
-      '<div class="lfk-stack is-sm"><span class="lfk-xs lfk-muted">Preços da ERSE de</span><span class="lfk-small lfk-strong">' + dataLonga(d.atualizado) + "</span></div></div>";
+      '<div class="lfk-author"><span><span class="lfk-author-sub">Preços da ERSE de</span><span class="lfk-author-name">' + dataLonga(d.atualizado) + "</span></span></div></div>";
   }
 
   function numeros(d) {
     var p2 = d.perfis[1], p1 = d.perfis[0];
     var poup = p2.regulado - p2.melhor.total;
     return '<div class="lfk-kpis">' +
-      '<div class="lfk-stat is-brand"><div class="lfk-stat-l">Oferta mais barata, casal com 2 filhos</div><div class="lfk-stat-v">' + eur0(p2.melhor.total) + '/ano</div><div class="lfk-stat-s">' + esc(p2.melhor.comercializador) + ", " + esc(p2.melhor.oferta) + ". Menos " + eur0(poup) + " do que no mercado regulado</div></div>" +
-      '<div class="lfk-stat"><div class="lfk-stat-l">Mediana do mercado livre</div><div class="lfk-stat-v">' + eur0(p2.mediana) + '/ano</div><div class="lfk-stat-s">Metade dos ' + p2.comercializadores + " comercializadores cobra mais. Regulado: " + eur0(p2.regulado) + "</div></div>" +
-      '<div class="lfk-stat"><div class="lfk-stat-l">Comercializadores mais baratos do que o regulado</div><div class="lfk-stat-v">' + p2.abaixo_regulado + " de " + p2.comercializadores + '</div><div class="lfk-stat-s">Num casal sem filhos são ' + p1.abaixo_regulado + " de " + p1.comercializadores + "</div></div>" +
+      '<div class="lfk-stat is-brand"><div class="lfk-stat-l">Oferta mais barata</div><div class="lfk-stat-v">' + eur0(p2.melhor.total) + '/ano</div><div class="lfk-stat-s">' + esc(p2.melhor.comercializador) + ". Menos " + eur0(poup) + " do que o regulado</div></div>" +
+      '<div class="lfk-stat"><div class="lfk-stat-l">Mediana do mercado livre</div><div class="lfk-stat-v">' + eur0(p2.mediana) + '/ano</div><div class="lfk-stat-s">' + p2.comercializadores + " comercializadores. Regulado: " + eur0(p2.regulado) + "</div></div>" +
+      '<div class="lfk-stat"><div class="lfk-stat-l">Abaixo do regulado</div><div class="lfk-stat-v">' + p2.abaixo_regulado + " de " + p2.comercializadores + '</div><div class="lfk-stat-s">Comercializadores mais baratos. Casal sem filhos: ' + p1.abaixo_regulado + " de " + p1.comercializadores + "</div></div>" +
       "</div>" +
-      '<p class="lfk-foot">Custo anual. ' + esc(d.metodo) + "</p>";
+      '<p class="lfk-foot">Casal com 2 filhos (6,9 kVA e 5.000 kWh por ano), custo anual. ' + esc(d.metodo) + "</p>";
   }
 
   function perfilCard(p) {
@@ -47,24 +46,25 @@
       '<p class="lfk-xs lfk-muted">' + esc(p.melhor.comercializador) + ", " + esc(p.melhor.oferta) + "</p>" +
       '<div class="lfk-kv"><span>Mediana do mercado livre</span><span>' + eur(p.mediana) + "</span></div>" +
       '<div class="lfk-kv"><span>Mercado regulado</span><span>' + eur(p.regulado) + "</span></div>" +
-      '<div class="lfk-kv"><span>Mediana face ao regulado</span><span class="' + (dif > 0 ? "lfk-neg" : "lfk-pos") + '">' + sinal(dif) + "</span></div>" +
-      '<div class="lfk-kv"><span>Poupança máxima</span><span class="lfk-pos">' + eur(p.regulado - p.melhor.total) + "</span></div></div>";
+      '<div class="lfk-kv"><span>Mediana face ao regulado</span><span><span class="' + (dif > 0 ? "lfk-neg" : "lfk-pos") + '">' + sinal(dif) + "</span></span></div>" +
+      '<div class="lfk-kv"><span>Poupança máxima</span><span><span class="lfk-pos">' + eur(p.regulado - p.melhor.total) + "</span></span></div></div>";
   }
 
   function desenhar(root, d) {
     var h = '<div class="lfk"><div class="lfk-calc"><div class="lfk-stack is-lg">' + autores(d) + numeros(d);
-    h += '<div class="lfk-stack"><h2 class="lfk-h-sm">Custo anual por tipo de casa</h2><div class="lfk-grid is-2">' + d.perfis.map(perfilCard).join("") + '</div><p class="lfk-table-note">Consumidores-tipo da ERSE. ' + d.perfis[1].ofertas + " ofertas de " + d.perfis[1].comercializadores + " comercializadores, mais o mercado regulado. A mediana usa a oferta mais barata de cada comercializador, para cada um contar uma vez.</p></div>";
+    h += '<div class="lfk-stack"><h2 class="lfk-h-sm">Custo anual por tipo de casa</h2><div class="lfk-grid is-2">' + d.perfis.map(perfilCard).join("") + '</div><p class="lfk-table-note"><sup>Consumidores-tipo da ERSE. ' + d.perfis[1].ofertas + " ofertas de " + d.perfis[1].comercializadores + " comercializadores, mais o mercado regulado. A mediana usa a oferta mais barata de cada comercializador, para cada um contar uma vez.</sup></p></div>";
 
     h += '<div class="lfk-card" id="ix-evol"><div class="lfk-card-head"><h2 class="lfk-h-sm">Evolução do custo anual</h2></div>' +
       '<div class="lfk-segment is-sm" id="ix-perfil">' + d.perfis.map(function (p, i) { return '<button type="button" value="' + p.id + '"' + (i === 1 ? ' aria-pressed="true"' : "") + ">" + esc(p.label) + "</button>"; }).join("") + "</div>" +
       '<div class="lfk-chart-head"><div class="lfk-toggle" role="tablist"><button type="button" class="lfk-tab is-active" data-lfk-tab="g">Gráfico</button><button type="button" class="lfk-tab" data-lfk-tab="t">Tabela</button></div>' +
       '<div class="lfk-menu" data-chart="#ix-c-evol" data-table="#ix-t-evol" data-file="indice-eletricidade"></div></div>' +
       '<div data-lfk-view="g"><div class="lfk-chart is-sm"><canvas id="ix-c-evol"></canvas></div></div><div data-lfk-view="t" hidden id="ix-t-evol"></div>' +
-      '<p class="lfk-table-note">Um ponto por cada ficheiro de ofertas publicado pela ERSE. A mediana muda também quando entram ou saem ofertas.</p></div>';
+      '<p class="lfk-table-note"><sup>Um ponto por cada ficheiro de ofertas publicado pela ERSE. A mediana muda também quando entram ou saem ofertas.</sup></p></div>';
 
-    if (d.edicoes && d.edicoes.length > 1) h += '<div class="lfk-card"><div class="lfk-card-head"><h2 class="lfk-h-sm">Edições mensais</h2></div><div id="ix-t-ed"></div><p class="lfk-table-note">Cada edição guarda os valores do primeiro ficheiro da ERSE do mês, para o casal com 2 filhos.</p></div>';
+    if (d.edicoes && d.edicoes.length > 1) h += '<div class="lfk-card"><div class="lfk-card-head"><h2 class="lfk-h-sm">Edições mensais</h2></div><div id="ix-t-ed"></div><p class="lfk-table-note"><sup>Cada edição guarda os valores do primeiro ficheiro da ERSE do mês, para o casal com 2 filhos.</sup></p></div>';
 
-    h += '<a class="lfk-calc-card" href="https://www.literaciafinanceira.pt/comparador-eletricidade"><div class="lfk-calc-card-body"><h4 class="lfk-calc-card-title">Comparador de eletricidade</h4><p class="lfk-ds-text">Compara todas as ofertas com o teu consumo, ou carrega a tua fatura, e vê quanto poupas.</p></div><img class="lfk-calc-card-img" src="' + KIT_IMG + '" alt=""></a>';
+    h += '<div id="lf-alerta-el"></div>';
+    h += '<div><a class="lfk-link-btn" href="https://www.literaciafinanceira.pt/comparador-eletricidade">Comparar com o teu consumo <span class="lfk-btn is-icon"><span class="lfk-ico-arrow"></span></span></a></div>';
     var cit = "Literacia Financeira, Índice da eletricidade, " + mesLongo(d.atualizado.slice(0, 7)) + " (preços da ERSE de " + d.atualizado.split("-").reverse().join("/") + "). literaciafinanceira.pt/indice-eletricidade";
     h += '<div class="lfk-card is-soft"><div class="lfk-stack is-sm"><h2 class="lfk-h-sm">Como citar</h2><p class="lfk-text" id="ix-cit">' + esc(cit) + '</p><div><button type="button" class="lfk-btn is-secondary is-sm" id="ix-copy">Copiar citação</button></div></div></div>';
     h += "</div></div></div>";
