@@ -468,6 +468,8 @@
     if (F.tarifa !== 'auto' && !tarifaDisponivel(F.tarifa)) F.tarifa = 'auto';
 
     var res = resultados(), lst = res.lista, vis = lst.slice(0, S.visible);
+    /* Para o alerta por email (alertas-lf.js): consumo simulado e melhor fatura mensal. So leitura. */
+    window.LFEletricidade = { pot: S.pot, kwhAno: Math.round(S.kwhMes * 12), melhorMes: res.melhor ? res.melhor.r.total / 12 : null, nome: res.melhor ? nomeDe(res.melhor.o.c) : '' };
     var eurM = S.eurIn > 0 && S.eurTocado; /* o 45€ de exemplo nao serve de base */
     var base = eurM ? S.eurIn * 12 : (res.reg ? res.reg.total : null);
     var baseLabel = eurM ? 'Face à tua fatura' : 'Face ao regulado', baseTxt = eurM ? 'a tua fatura' : 'o mercado regulado';
