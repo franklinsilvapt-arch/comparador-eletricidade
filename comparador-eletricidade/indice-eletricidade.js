@@ -39,12 +39,26 @@
       '<p class="lfk-foot">Casal com 2 filhos (6,9 kVA e 5.000 kWh por ano), custo anual. ' + esc(d.metodo) + "</p>";
   }
 
+  /* Diz qual é a oferta mais barata: uma só frase se for a mesma nos três tipos de casa, senão uma por casa. */
+  function notaMelhor(d) {
+    var ids = d.perfis.map(function (p) { return p.melhor.id; });
+    if (ids.every(function (x) { return x === ids[0]; })) return "Oferta mais barata nos " + (d.perfis.length === 3 ? "três" : "dois") + " casos: " + esc(d.perfis[0].melhor.comercializador) + ", " + esc(d.perfis[0].melhor.oferta) + ".";
+    return "Oferta mais barata: " + d.perfis.map(function (p) { return esc(p.label.replace(/^Casal /, "")) + ", " + esc(p.melhor.comercializador); }).join("; ") + ".";
+  }
+  /* Como citar: cartão igual aos outros, com a referência numa caixa e o botão de copiar ao lado. */
+  function cartaoCitar(cit) {
+    return '<div class="lfk-card"><div class="lfk-stack is-sm"><div class="lfk-card-head"><h2 class="lfk-h-sm">Como citar</h2></div>' +
+      '<p class="lfk-small lfk-muted">Se usares estes dados num artigo, trabalho ou publicação, indica a fonte assim:</p>' +
+      '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#f9fafb;border:1px solid #e9ecf1;border-radius:12px;padding:12px 14px">' +
+      '<p class="lfk-text" id="ix-cit" style="flex:1 1 260px;margin:0">' + esc(cit) + "</p>" +
+      '<button type="button" class="lfk-btn is-secondary is-sm" id="ix-copy" style="flex:0 0 auto">Copiar citação</button></div></div></div>';
+  }
   function desenhar(root, d) {
     var h = '<div class="lfk"><div class="lfk-calc"><div class="lfk-stack is-lg">' + autores(d) + numeros(d);
-    h += '<div class="lfk-card" id="ix-casas"><div class="lfk-card-head"><h2 class="lfk-h-sm">Custo anual por tipo de casa</h2></div><div id="ix-t-casas"></div><p class="lfk-table-note"><sup>Consumidores-tipo da ERSE. Oferta mais barata nos dois casos: ' + esc(d.perfis[1].melhor.comercializador) + ", " + esc(d.perfis[1].melhor.oferta) + ". " + d.perfis[1].ofertas + " ofertas de " + d.perfis[1].comercializadores + " comercializadores, mais o mercado regulado. A mediana usa a oferta mais barata de cada comercializador, para cada um contar uma vez.</sup></p></div>";
+    h += '<div class="lfk-card" id="ix-casas"><div class="lfk-card-head"><h2 class="lfk-h-sm">Custo anual por tipo de casa</h2></div><div id="ix-t-casas"></div><p class="lfk-table-note"><sup>Os três consumidores-tipo da ERSE, na tarifa simples. ' + notaMelhor(d) + " " + d.perfis[1].ofertas + " ofertas de " + d.perfis[1].comercializadores + " comercializadores, mais o mercado regulado. A mediana usa a oferta mais barata de cada comercializador, para cada um contar uma vez.</sup></p></div>";
 
     h += '<div class="lfk-card" id="ix-evol"><div class="lfk-card-head"><h2 class="lfk-h-sm">Evolução do custo anual</h2>' +
-      '<div class="lfk-segment is-sm" id="ix-perfil">' + d.perfis.map(function (p, i) { return '<button type="button" value="' + p.id + '"' + (i === 1 ? ' aria-pressed="true"' : "") + ">" + esc(p.label) + "</button>"; }).join("") + "</div></div>" +
+      '<div class="lfk-segment is-sm" id="ix-perfil">' + d.perfis.map(function (p, i) { return '<button type="button" value="' + p.id + '"' + (i === 1 ? ' aria-pressed="true"' : "") + ">" + esc(p.label.replace(/^Casal (sem|com)/, function (m, x) { return x === "sem" ? "Sem" : "Com"; })) + "</button>"; }).join("") + "</div></div>" +
       '<div class="lfk-chart-head"><div class="lfk-toggle" role="tablist"><button type="button" class="lfk-tab is-active" data-lfk-tab="g">Gráfico</button><button type="button" class="lfk-tab" data-lfk-tab="t">Tabela</button></div>' +
       '<div class="lfk-menu" data-chart="#ix-c-evol" data-table="#ix-t-evol" data-file="indice-eletricidade"></div></div>' +
       '<div data-lfk-view="g"><div class="lfk-chart is-sm"><canvas id="ix-c-evol"></canvas></div></div><div data-lfk-view="t" hidden id="ix-t-evol"></div>' +
@@ -52,12 +66,12 @@
 
     if (d.edicoes && d.edicoes.length > 1) h += '<div class="lfk-card"><div class="lfk-card-head"><h2 class="lfk-h-sm">Edições mensais</h2></div><div id="ix-t-ed"></div><p class="lfk-table-note"><sup>Cada edição guarda os valores do primeiro ficheiro da ERSE do mês, para o casal com 2 filhos.</sup></p></div>';
 
-    h += '<div id="lf-alerta-el"></div>';
-    h += '<div><a class="lfk-link-btn" href="https://www.literaciafinanceira.pt/comparador-eletricidade">Comparar com o teu consumo <span class="lfk-btn is-icon"><span class="lfk-ico-arrow"></span></span></a></div>';
     var cit = "Literacia Financeira, Índice da eletricidade, " + mesLongo(d.atualizado.slice(0, 7)) + " (preços da ERSE de " + d.atualizado.split("-").reverse().join("/") + "). literaciafinanceira.pt/indice-eletricidade";
-    h += '<div class="lfk-card is-soft"><div class="lfk-stack is-sm"><h2 class="lfk-h-sm">Como citar</h2><p class="lfk-text" id="ix-cit">' + esc(cit) + '</p><div><button type="button" class="lfk-btn is-secondary is-sm" id="ix-copy">Copiar citação</button></div></div></div>';
+    h += cartaoCitar(cit);
+    h += '<div><a class="lfk-link-btn" href="https://www.literaciafinanceira.pt/comparador-eletricidade">Comparar com o teu consumo <span class="lfk-btn is-icon"><span class="lfk-ico-arrow"></span></span></a></div>';
+    h += '<div id="lf-alerta-el"></div>';
     h += "</div></div></div>";
-    root.innerHTML = h + '<style>@media (max-width:479px){#ix-t-casas .lfk-table th,#ix-t-casas .lfk-table td{padding:10px 6px}#ix-t-casas .lfk-table th,#ix-t-casas .lfk-table td{min-width:0}}</style>';
+    root.innerHTML = h + '<style>@media (max-width:479px){#ix-t-casas .lfk-table th,#ix-t-casas .lfk-table td{padding:10px 4px}#ix-t-casas .lfk-table th .lfk-xs{font-size:11px}#ix-t-casas .lfk-table th,#ix-t-casas .lfk-table td{min-width:0}}</style>';
 
     var ped = d.perfis.map(function (p) { return p; });
     /* Rótulos podem partir em duas linhas: no telemóvel as duas colunas cabem sem deslizar. */
@@ -65,7 +79,7 @@
     function cel(v, cls) { return '<span class="lfk-strong' + (cls ? " " + cls : "") + '">' + v + "</span>"; }
     LFK.table(document.getElementById("ix-t-casas"), {
       head: [""].concat(ped.map(function (p) { return esc(p.label.replace(/^Casal /, "").replace(/^s/, "S").replace(/^c/, "C")) + '<br><span class="lfk-xs lfk-muted">' + kva(p.potencia) + '<br><span style="white-space:nowrap">' + n0(p.kwh) + " kWh</span></span>"; })),
-      num: [false, false, false],
+      num: [false].concat(ped.map(function () { return false; })),
       rows: [
         [lab("Oferta mais barata")].concat(ped.map(function (p) { return cel(eur0(p.melhor.total)); })),
         [lab("Mediana do mercado livre")].concat(ped.map(function (p) { return cel(eur0(p.mediana)); })),

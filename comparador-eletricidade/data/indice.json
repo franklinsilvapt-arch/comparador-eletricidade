@@ -36,6 +36,23 @@
    "comercializadores": 18,
    "ofertas": 172,
    "abaixo_regulado": 8
+  },
+  {
+   "id": "p3",
+   "label": "Casal com 4 filhos",
+   "potencia": 13.8,
+   "kwh": 10900,
+   "regulado": 2665.0,
+   "melhor": {
+    "total": 2240.24,
+    "comercializador": "EDP",
+    "oferta": "Eletricidade DD+FE - Digital",
+    "id": "EDPC_13"
+   },
+   "mediana": 2687.29,
+   "comercializadores": 18,
+   "ofertas": 168,
+   "abaixo_regulado": 9
   }
  ],
  "comercializadores": 18,
@@ -52,6 +69,11 @@
     "melhor": 1017.98,
     "mediana": 1189.29,
     "regulado": 1156.5
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2641.57,
+    "regulado": 2588.58
    }
   },
   {
@@ -65,6 +87,11 @@
     "melhor": 1017.98,
     "mediana": 1189.29,
     "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2641.57,
+    "regulado": 2665.0
    }
   },
   {
@@ -78,6 +105,11 @@
     "melhor": 1017.98,
     "mediana": 1189.29,
     "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2641.57,
+    "regulado": 2665.0
    }
   },
   {
@@ -91,6 +123,11 @@
     "melhor": 1017.98,
     "mediana": 1189.29,
     "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2641.57,
+    "regulado": 2665.0
    }
   },
   {
@@ -104,6 +141,11 @@
     "melhor": 1017.98,
     "mediana": 1189.29,
     "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2661.61,
+    "regulado": 2665.0
    }
   },
   {
@@ -117,6 +159,11 @@
     "melhor": 1017.98,
     "mediana": 1189.29,
     "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2661.61,
+    "regulado": 2665.0
    }
   },
   {
@@ -130,6 +177,11 @@
     "melhor": 1017.98,
     "mediana": 1189.29,
     "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2661.61,
+    "regulado": 2665.0
    }
   },
   {
@@ -143,6 +195,11 @@
     "melhor": 1017.98,
     "mediana": 1189.29,
     "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2661.61,
+    "regulado": 2665.0
    }
   },
   {
@@ -156,6 +213,11 @@
     "melhor": 1017.98,
     "mediana": 1210.13,
     "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2687.29,
+    "regulado": 2665.0
    }
   }
  ],
@@ -172,6 +234,11 @@
     "melhor": 1017.98,
     "mediana": 1189.29,
     "regulado": 1156.5
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2641.57,
+    "regulado": 2588.58
    }
   },
   {
@@ -186,6 +253,11 @@
     "melhor": 1017.98,
     "mediana": 1189.29,
     "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2641.57,
+    "regulado": 2665.0
    }
   }
  ]

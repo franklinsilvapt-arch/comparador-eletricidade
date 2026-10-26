@@ -18,6 +18,7 @@ RAIZ = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 PERFIS = [
     {"id": "p1", "label": "Casal sem filhos", "pot": 2, "kwh": 1900},
     {"id": "p2", "label": "Casal com 2 filhos", "pot": 5, "kwh": 5000},
+    {"id": "p3", "label": "Casal com 4 filhos", "pot": 7, "kwh": 10900},  # consumidor-tipo 3 da ERSE: 13,8 kVA
 ]
 DGEG = 0.07
 NOMES = {"TUR": "Mercado regulado", "ALFAENERGIA": "Alfa Energia", "AUDAX": "Audax", "COOP": "Coopérnico", "EDPC": "EDP",
