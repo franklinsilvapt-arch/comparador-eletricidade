@@ -1,0 +1,192 @@
+{
+ "atualizado": "2026-10-19",
+ "fonte": "ERSE, ofertas comerciais comunicadas pelos comercializadores",
+ "ofertas": 182,
+ "perfis": [
+  {
+   "id": "p1",
+   "label": "Casal sem filhos",
+   "potencia": 3.45,
+   "kwh": 1900,
+   "regulado": 459.62,
+   "melhor": {
+    "total": 402.08,
+    "comercializador": "EDP",
+    "oferta": "Eletricidade DD+FE - Digital",
+    "id": "EDPC_13"
+   },
+   "mediana": 493.74,
+   "comercializadores": 17,
+   "ofertas": 171,
+   "abaixo_regulado": 7
+  },
+  {
+   "id": "p2",
+   "label": "Casal com 2 filhos",
+   "potencia": 6.9,
+   "kwh": 5000,
+   "regulado": 1189.19,
+   "melhor": {
+    "total": 1017.98,
+    "comercializador": "EDP",
+    "oferta": "Eletricidade DD+FE - Digital",
+    "id": "EDPC_13"
+   },
+   "mediana": 1189.29,
+   "comercializadores": 17,
+   "ofertas": 171,
+   "abaixo_regulado": 8
+  }
+ ],
+ "comercializadores": 17,
+ "metodo": "Tarifa simples, sem tarifa social, sem ofertas indexadas e sem descontos de adesão à parte. Inclui IVA, IEC, contribuição audiovisual e taxa da DGEG.",
+ "serie": [
+  {
+   "data": "2026-09-29",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 480.22,
+    "regulado": 448.14
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1156.5
+   }
+  },
+  {
+   "data": "2026-10-02",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 480.22,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1189.19
+   }
+  },
+  {
+   "data": "2026-10-06",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 480.22,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1189.19
+   }
+  },
+  {
+   "data": "2026-10-07",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 480.22,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1189.19
+   }
+  },
+  {
+   "data": "2026-10-08",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 493.74,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1189.19
+   }
+  },
+  {
+   "data": "2026-10-12",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 493.74,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1189.19
+   }
+  },
+  {
+   "data": "2026-10-13",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 493.74,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1189.19
+   }
+  },
+  {
+   "data": "2026-10-15",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 493.74,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1189.19
+   }
+  },
+  {
+   "data": "2026-10-19",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 493.74,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1189.19
+   }
+  }
+ ],
+ "edicoes": [
+  {
+   "mes": "2026-09",
+   "data": "2026-09-29",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 480.22,
+    "regulado": 448.14
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1156.5
+   }
+  },
+  {
+   "mes": "2026-10",
+   "data": "2026-10-02",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 480.22,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1189.29,
+    "regulado": 1189.19
+   }
+  }
+ ]
+}

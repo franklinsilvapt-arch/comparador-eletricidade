@@ -1,0 +1,124 @@
+/* Índice da eletricidade do Literacia Financeira.
+   Lê data/indice.json (gerado todos os dias por scripts/gerar_indice.py, no fim de atualizar_ofertas.py)
+   e desenha a página com o lf-kit do Diogo. Requer lf-kit.css e lf-kit.js carregados antes.
+   Raiz: o div #lf-dp (ou #lf-indice) da página. */
+(function () {
+  var SRC = (document.currentScript && document.currentScript.src) || "";
+  var BASE = SRC ? SRC.replace(/[^\/]*(\?.*)?$/, "") : "https://franklinsilvapt-arch.github.io/comparador-eletricidade/comparador-eletricidade/";
+  var KIT_IMG = "https://cdn.jsdelivr.net/gh/pedrofintech/lf-site-assets@63c25df227931cfeb49da2121df5719c1107cc46/kit/img/illustration-chart.png";
+  var MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  var MES_CURTO = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+  function eur(v) { return LFK.fmt(v); }
+  function eur0(v) { return LFK.fmt(v, { decimals: 0 }); }
+  function n0(v) { return LFK.fmt(v, { currency: false, decimals: 0 }); }
+  function kva(v) { return LFK.fmt(v, { currency: false }) + " kVA"; }
+  function dataLonga(iso) { var p = iso.split("-"); return +p[2] + " de " + MESES[+p[1] - 1] + " de " + p[0]; }
+  function dataCurta(iso) { var p = iso.split("-"); return +p[2] + " " + MES_CURTO[+p[1] - 1]; }
+  function mesLongo(ym) { var p = ym.split("-"); return MESES[+p[1] - 1] + " de " + p[0]; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function sinal(v) { return (v > 0 ? "+" : v < 0 ? "-" : "") + eur(Math.abs(v)); }
+
+  function autores(d) {
+    function a(img, label, nome, href) {
+      return '<a class="lfk-author" href="' + href + '"><span class="lfk-author-img"><img src="' + img + '" alt="' + nome + '"></span><span><span class="lfk-author-sub">' + label + '</span><span class="lfk-author-name">' + nome + "</span></span></a>";
+    }
+    return '<div class="lfk-row">' +
+      a("https://cdn.prod.website-files.com/67922c46c9da6bf5d9bfdf20/683ee0ae5bc67fe0ef48466e_franklin-silva.avif", "Autor", "Franklin Silva", "https://www.literaciafinanceira.pt/autores/franklin-silva") +
+      a("https://cdn.prod.website-files.com/67922c46c9da6bf5d9bfdf20/683ee0f9b80a20ec1767fab5_Pedro-Braz.avif", "Revisor", "Pedro Braz", "https://www.literaciafinanceira.pt/autores/pedro-braz") +
+      '<div class="lfk-stack is-sm"><span class="lfk-xs lfk-muted">Preços da ERSE de</span><span class="lfk-small lfk-strong">' + dataLonga(d.atualizado) + "</span></div></div>";
+  }
+
+  function numeros(d) {
+    var p2 = d.perfis[1], p1 = d.perfis[0];
+    var poup = p2.regulado - p2.melhor.total;
+    return '<div class="lfk-kpis">' +
+      '<div class="lfk-stat is-brand"><div class="lfk-stat-l">Oferta mais barata, casal com 2 filhos</div><div class="lfk-stat-v">' + eur0(p2.melhor.total) + '/ano</div><div class="lfk-stat-s">' + esc(p2.melhor.comercializador) + ", " + esc(p2.melhor.oferta) + ". Menos " + eur0(poup) + " do que no mercado regulado</div></div>" +
+      '<div class="lfk-stat"><div class="lfk-stat-l">Mediana do mercado livre</div><div class="lfk-stat-v">' + eur0(p2.mediana) + '/ano</div><div class="lfk-stat-s">Metade dos ' + p2.comercializadores + " comercializadores cobra mais. Regulado: " + eur0(p2.regulado) + "</div></div>" +
+      '<div class="lfk-stat"><div class="lfk-stat-l">Comercializadores mais baratos do que o regulado</div><div class="lfk-stat-v">' + p2.abaixo_regulado + " de " + p2.comercializadores + '</div><div class="lfk-stat-s">Num casal sem filhos são ' + p1.abaixo_regulado + " de " + p1.comercializadores + "</div></div>" +
+      "</div>" +
+      '<p class="lfk-foot">Custo anual. ' + esc(d.metodo) + "</p>";
+  }
+
+  function perfilCard(p) {
+    var dif = p.mediana - p.regulado;
+    return '<div class="lfk-card"><div class="lfk-card-head"><h3 class="lfk-h-sm">' + esc(p.label) + '</h3></div><p class="lfk-small lfk-muted">' + kva(p.potencia) + ", " + n0(p.kwh) + " kWh por ano</p>" +
+      '<div class="lfk-kv is-total"><span>Oferta mais barata</span><span>' + eur(p.melhor.total) + "</span></div>" +
+      '<p class="lfk-xs lfk-muted">' + esc(p.melhor.comercializador) + ", " + esc(p.melhor.oferta) + "</p>" +
+      '<div class="lfk-kv"><span>Mediana do mercado livre</span><span>' + eur(p.mediana) + "</span></div>" +
+      '<div class="lfk-kv"><span>Mercado regulado</span><span>' + eur(p.regulado) + "</span></div>" +
+      '<div class="lfk-kv"><span>Mediana face ao regulado</span><span class="' + (dif > 0 ? "lfk-neg" : "lfk-pos") + '">' + sinal(dif) + "</span></div>" +
+      '<div class="lfk-kv"><span>Poupança máxima</span><span class="lfk-pos">' + eur(p.regulado - p.melhor.total) + "</span></div></div>";
+  }
+
+  function desenhar(root, d) {
+    var h = '<div class="lfk"><div class="lfk-calc"><div class="lfk-stack is-lg">' + autores(d) + numeros(d);
+    h += '<div class="lfk-stack"><h2 class="lfk-h-sm">Custo anual por tipo de casa</h2><div class="lfk-grid is-2">' + d.perfis.map(perfilCard).join("") + '</div><p class="lfk-table-note">Consumidores-tipo da ERSE. ' + d.perfis[1].ofertas + " ofertas de " + d.perfis[1].comercializadores + " comercializadores, mais o mercado regulado. A mediana usa a oferta mais barata de cada comercializador, para cada um contar uma vez.</p></div>";
+
+    h += '<div class="lfk-card" id="ix-evol"><div class="lfk-card-head"><h2 class="lfk-h-sm">Evolução do custo anual</h2></div>' +
+      '<div class="lfk-segment is-sm" id="ix-perfil">' + d.perfis.map(function (p, i) { return '<button type="button" value="' + p.id + '"' + (i === 1 ? ' aria-pressed="true"' : "") + ">" + esc(p.label) + "</button>"; }).join("") + "</div>" +
+      '<div class="lfk-chart-head"><div class="lfk-toggle" role="tablist"><button type="button" class="lfk-tab is-active" data-lfk-tab="g">Gráfico</button><button type="button" class="lfk-tab" data-lfk-tab="t">Tabela</button></div>' +
+      '<div class="lfk-menu" data-chart="#ix-c-evol" data-table="#ix-t-evol" data-file="indice-eletricidade"></div></div>' +
+      '<div data-lfk-view="g"><div class="lfk-chart is-sm"><canvas id="ix-c-evol"></canvas></div></div><div data-lfk-view="t" hidden id="ix-t-evol"></div>' +
+      '<p class="lfk-table-note">Um ponto por cada ficheiro de ofertas publicado pela ERSE. A mediana muda também quando entram ou saem ofertas.</p></div>';
+
+    if (d.edicoes && d.edicoes.length > 1) h += '<div class="lfk-card"><div class="lfk-card-head"><h2 class="lfk-h-sm">Edições mensais</h2></div><div id="ix-t-ed"></div><p class="lfk-table-note">Cada edição guarda os valores do primeiro ficheiro da ERSE do mês, para o casal com 2 filhos.</p></div>';
+
+    h += '<a class="lfk-calc-card" href="https://www.literaciafinanceira.pt/comparador-eletricidade"><div class="lfk-calc-card-body"><h4 class="lfk-calc-card-title">Comparador de eletricidade</h4><p class="lfk-ds-text">Compara todas as ofertas com o teu consumo, ou carrega a tua fatura, e vê quanto poupas.</p></div><img class="lfk-calc-card-img" src="' + KIT_IMG + '" alt=""></a>';
+    var cit = "Literacia Financeira, Índice da eletricidade, " + mesLongo(d.atualizado.slice(0, 7)) + " (preços da ERSE de " + d.atualizado.split("-").reverse().join("/") + "). literaciafinanceira.pt/indice-eletricidade";
+    h += '<div class="lfk-card is-soft"><div class="lfk-stack is-sm"><h2 class="lfk-h-sm">Como citar</h2><p class="lfk-text" id="ix-cit">' + esc(cit) + '</p><div><button type="button" class="lfk-btn is-secondary is-sm" id="ix-copy">Copiar citação</button></div></div></div>';
+    h += "</div></div></div>";
+    root.innerHTML = h;
+
+    var ev = document.getElementById("ix-evol");
+    LFK.views(ev);
+    function grafico(pid) {
+      var s = d.serie.filter(function (x) { return x[pid]; });
+      var c = LFK.line(document.getElementById("ix-c-evol"), {
+        labels: s.map(function (x) { return dataCurta(x.data); }), money: eur,
+        datasets: [
+          { label: "Mercado regulado", data: s.map(function (x) { return x[pid].regulado; }) },
+          { label: "Mediana do mercado livre", data: s.map(function (x) { return x[pid].mediana; }) },
+          { label: "Oferta mais barata", data: s.map(function (x) { return x[pid].melhor; }) }
+        ]
+      });
+      if (c && c.then) c.then(function (ch) {
+        ch.options.scales.y.ticks.callback = function (v) { return eur0(v); };
+        ch.data.datasets.forEach(function (ds) { ds.pointRadius = 3; ds.tension = 0; });
+        ch.update("none");
+      });
+      LFK.table(document.getElementById("ix-t-evol"), {
+        head: ["Data", "Regulado", "Mediana", "Mais barata"], num: [false, true, true, true],
+        rows: s.slice().reverse().map(function (x) { return [dataLonga(x.data), eur(x[pid].regulado), eur(x[pid].mediana), eur(x[pid].melhor)]; })
+      });
+    }
+    grafico(d.perfis[1].id);
+    document.getElementById("ix-perfil").addEventListener("change", function (e) { grafico(e.detail.value); });
+
+    var ted = document.getElementById("ix-t-ed");
+    if (ted) LFK.table(ted, {
+      head: ["Edição", "Mais barata", "Mediana", "Regulado"], num: [false, true, true, true],
+      rows: d.edicoes.slice().reverse().map(function (x) { var p = x.p2; return [mesLongo(x.mes), eur(p.melhor), eur(p.mediana), eur(p.regulado)]; })
+    });
+
+    var b = document.getElementById("ix-copy");
+    b.addEventListener("click", function () {
+      var t = document.getElementById("ix-cit").textContent;
+      function ok() { b.textContent = "Copiado"; setTimeout(function () { b.textContent = "Copiar citação"; }, 2000); }
+      function sel() { var r = document.createRange(); r.selectNodeContents(document.getElementById("ix-cit")); var s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+      try { navigator.clipboard.writeText(t).then(ok, sel); } catch (e) { sel(); }
+    });
+    if (window.ScrollTrigger && window.ScrollTrigger.refresh) window.ScrollTrigger.refresh();
+  }
+
+  function iniciar() {
+    var root = document.getElementById("lf-indice") || document.getElementById("lf-dp");
+    if (!root || !window.LFK) return;
+    root.innerHTML = '<div class="lfk"><div class="lfk-empty"><p>A carregar o índice...</p></div></div>';
+    fetch(BASE + "data/indice.json?v=" + Math.floor(Date.now() / 600000))
+      .then(function (r) { return r.json(); })
+      .then(function (d) { desenhar(root, d); })
+      .catch(function () { root.innerHTML = '<div class="lfk"><div class="lfk-alert is-err">Não foi possível carregar o índice. Atualiza a página dentro de alguns minutos.</div></div>'; });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar); else iniciar();
+})();

@@ -395,6 +395,12 @@ def main():
     with open(os.path.join(RAIZ, "data", "ultima_execucao.txt"), "w", encoding="utf-8") as f:
         f.write(f"{datetime.now().isoformat(timespec='seconds')} ficheiro ERSE de {atualizado}, {len(ofertas)} ofertas, {n_site} dos sites\n")
         f.write("\n".join(AVISOS) + ("\n" if AVISOS else "sem avisos\n"))
+    # Índice da eletricidade (data/indice.json): nunca impede a atualização das ofertas
+    try:
+        import gerar_indice
+        gerar_indice.main()
+    except Exception as e:
+        aviso("ÍNDICE FALHOU:", e)
     publicar("Ofertas da ERSE atualizadas")
     if erro:
         sys.exit(1)
