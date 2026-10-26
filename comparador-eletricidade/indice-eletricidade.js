@@ -57,19 +57,21 @@
     var cit = "Literacia Financeira, Índice da eletricidade, " + mesLongo(d.atualizado.slice(0, 7)) + " (preços da ERSE de " + d.atualizado.split("-").reverse().join("/") + "). literaciafinanceira.pt/indice-eletricidade";
     h += '<div class="lfk-card is-soft"><div class="lfk-stack is-sm"><h2 class="lfk-h-sm">Como citar</h2><p class="lfk-text" id="ix-cit">' + esc(cit) + '</p><div><button type="button" class="lfk-btn is-secondary is-sm" id="ix-copy">Copiar citação</button></div></div></div>';
     h += "</div></div></div>";
-    root.innerHTML = h;
+    root.innerHTML = h + '<style>@media (max-width:479px){#ix-t-casas .lfk-table th,#ix-t-casas .lfk-table td{padding:10px 6px}#ix-t-casas .lfk-table th,#ix-t-casas .lfk-table td{min-width:0}}</style>';
 
     var ped = d.perfis.map(function (p) { return p; });
+    /* Rótulos podem partir em duas linhas: no telemóvel as duas colunas cabem sem deslizar. */
+    function lab(t) { return '<span style="white-space:normal">' + t + "</span>"; }
     function cel(v, cls) { return '<span class="lfk-strong' + (cls ? " " + cls : "") + '">' + v + "</span>"; }
     LFK.table(document.getElementById("ix-t-casas"), {
-      head: [""].concat(ped.map(function (p) { return esc(p.label) + '<br><span class="lfk-xs lfk-muted">' + kva(p.potencia) + ", " + n0(p.kwh) + " kWh</span>"; })),
+      head: [""].concat(ped.map(function (p) { return esc(p.label.replace(/^Casal /, "").replace(/^s/, "S").replace(/^c/, "C")) + '<br><span class="lfk-xs lfk-muted">' + kva(p.potencia) + '<br><span style="white-space:nowrap">' + n0(p.kwh) + " kWh</span></span>"; })),
       num: [false, false, false],
       rows: [
-        ["Oferta mais barata"].concat(ped.map(function (p) { return cel(eur(p.melhor.total)); })),
-        ["Mediana do mercado livre"].concat(ped.map(function (p) { return cel(eur(p.mediana)); })),
-        ["Mercado regulado"].concat(ped.map(function (p) { return cel(eur(p.regulado)); })),
-        ["Mediana face ao regulado"].concat(ped.map(function (p) { var x = p.mediana - p.regulado; return cel(sinal(x), x > 0 ? "lfk-neg" : "lfk-pos"); })),
-        ["Poupança máxima"].concat(ped.map(function (p) { return cel(eur(p.regulado - p.melhor.total), "lfk-pos"); }))
+        [lab("Oferta mais barata")].concat(ped.map(function (p) { return cel(eur0(p.melhor.total)); })),
+        [lab("Mediana do mercado livre")].concat(ped.map(function (p) { return cel(eur0(p.mediana)); })),
+        [lab("Mercado regulado")].concat(ped.map(function (p) { return cel(eur0(p.regulado)); })),
+        [lab("Mediana face ao regulado")].concat(ped.map(function (p) { var x = p.mediana - p.regulado; return cel((x > 0 ? "+" : x < 0 ? "-" : "") + eur0(Math.abs(x)), x > 0 ? "lfk-neg" : "lfk-pos"); })),
+        [lab("Poupança máxima")].concat(ped.map(function (p) { return cel(eur0(p.regulado - p.melhor.total), "lfk-pos"); }))
       ]
     });
     var ev = document.getElementById("ix-evol");
