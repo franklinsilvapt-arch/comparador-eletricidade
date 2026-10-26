@@ -39,23 +39,12 @@
       '<p class="lfk-foot">Casal com 2 filhos (6,9 kVA e 5.000 kWh por ano), custo anual. ' + esc(d.metodo) + "</p>";
   }
 
-  function perfilCard(p) {
-    var dif = p.mediana - p.regulado;
-    return '<div class="lfk-card"><div class="lfk-card-head"><h3 class="lfk-h-sm">' + esc(p.label) + '</h3></div><p class="lfk-small lfk-muted">' + kva(p.potencia) + ", " + n0(p.kwh) + " kWh por ano</p>" +
-      '<div class="lfk-kv is-total"><span>Oferta mais barata</span><span>' + eur(p.melhor.total) + "</span></div>" +
-      '<p class="lfk-xs lfk-muted">' + esc(p.melhor.comercializador) + ", " + esc(p.melhor.oferta) + "</p>" +
-      '<div class="lfk-kv"><span>Mediana do mercado livre</span><span>' + eur(p.mediana) + "</span></div>" +
-      '<div class="lfk-kv"><span>Mercado regulado</span><span>' + eur(p.regulado) + "</span></div>" +
-      '<div class="lfk-kv"><span>Mediana face ao regulado</span><span><span class="' + (dif > 0 ? "lfk-neg" : "lfk-pos") + '">' + sinal(dif) + "</span></span></div>" +
-      '<div class="lfk-kv"><span>Poupança máxima</span><span><span class="lfk-pos">' + eur(p.regulado - p.melhor.total) + "</span></span></div></div>";
-  }
-
   function desenhar(root, d) {
     var h = '<div class="lfk"><div class="lfk-calc"><div class="lfk-stack is-lg">' + autores(d) + numeros(d);
-    h += '<div class="lfk-stack"><h2 class="lfk-h-sm">Custo anual por tipo de casa</h2><div class="lfk-grid is-2">' + d.perfis.map(perfilCard).join("") + '</div><p class="lfk-table-note"><sup>Consumidores-tipo da ERSE. ' + d.perfis[1].ofertas + " ofertas de " + d.perfis[1].comercializadores + " comercializadores, mais o mercado regulado. A mediana usa a oferta mais barata de cada comercializador, para cada um contar uma vez.</sup></p></div>";
+    h += '<div class="lfk-card" id="ix-casas"><div class="lfk-card-head"><h2 class="lfk-h-sm">Custo anual por tipo de casa</h2></div><div id="ix-t-casas"></div><p class="lfk-table-note"><sup>Consumidores-tipo da ERSE. Oferta mais barata nos dois casos: ' + esc(d.perfis[1].melhor.comercializador) + ", " + esc(d.perfis[1].melhor.oferta) + ". " + d.perfis[1].ofertas + " ofertas de " + d.perfis[1].comercializadores + " comercializadores, mais o mercado regulado. A mediana usa a oferta mais barata de cada comercializador, para cada um contar uma vez.</sup></p></div>";
 
-    h += '<div class="lfk-card" id="ix-evol"><div class="lfk-card-head"><h2 class="lfk-h-sm">Evolução do custo anual</h2></div>' +
-      '<div class="lfk-segment is-sm" id="ix-perfil">' + d.perfis.map(function (p, i) { return '<button type="button" value="' + p.id + '"' + (i === 1 ? ' aria-pressed="true"' : "") + ">" + esc(p.label) + "</button>"; }).join("") + "</div>" +
+    h += '<div class="lfk-card" id="ix-evol"><div class="lfk-card-head"><h2 class="lfk-h-sm">Evolução do custo anual</h2>' +
+      '<div class="lfk-segment is-sm" id="ix-perfil">' + d.perfis.map(function (p, i) { return '<button type="button" value="' + p.id + '"' + (i === 1 ? ' aria-pressed="true"' : "") + ">" + esc(p.label) + "</button>"; }).join("") + "</div></div>" +
       '<div class="lfk-chart-head"><div class="lfk-toggle" role="tablist"><button type="button" class="lfk-tab is-active" data-lfk-tab="g">Gráfico</button><button type="button" class="lfk-tab" data-lfk-tab="t">Tabela</button></div>' +
       '<div class="lfk-menu" data-chart="#ix-c-evol" data-table="#ix-t-evol" data-file="indice-eletricidade"></div></div>' +
       '<div data-lfk-view="g"><div class="lfk-chart is-sm"><canvas id="ix-c-evol"></canvas></div></div><div data-lfk-view="t" hidden id="ix-t-evol"></div>' +
@@ -70,6 +59,19 @@
     h += "</div></div></div>";
     root.innerHTML = h;
 
+    var ped = d.perfis.map(function (p) { return p; });
+    function cel(v, cls) { return '<span class="lfk-strong' + (cls ? " " + cls : "") + '">' + v + "</span>"; }
+    LFK.table(document.getElementById("ix-t-casas"), {
+      head: [""].concat(ped.map(function (p) { return esc(p.label) + '<br><span class="lfk-xs lfk-muted">' + kva(p.potencia) + ", " + n0(p.kwh) + " kWh</span>"; })),
+      num: [false, false, false],
+      rows: [
+        ["Oferta mais barata"].concat(ped.map(function (p) { return cel(eur(p.melhor.total)); })),
+        ["Mediana do mercado livre"].concat(ped.map(function (p) { return cel(eur(p.mediana)); })),
+        ["Mercado regulado"].concat(ped.map(function (p) { return cel(eur(p.regulado)); })),
+        ["Mediana face ao regulado"].concat(ped.map(function (p) { var x = p.mediana - p.regulado; return cel(sinal(x), x > 0 ? "lfk-neg" : "lfk-pos"); })),
+        ["Poupança máxima"].concat(ped.map(function (p) { return cel(eur(p.regulado - p.melhor.total), "lfk-pos"); }))
+      ]
+    });
     var ev = document.getElementById("ix-evol");
     LFK.views(ev);
     function grafico(pid) {
@@ -101,6 +103,7 @@
       rows: d.edicoes.slice().reverse().map(function (x) { var p = x.p2; return [mesLongo(x.mes), eur(p.melhor), eur(p.mediana), eur(p.regulado)]; })
     });
 
+    LFK.menus(root);
     var b = document.getElementById("ix-copy");
     b.addEventListener("click", function () {
       var t = document.getElementById("ix-cit").textContent;
