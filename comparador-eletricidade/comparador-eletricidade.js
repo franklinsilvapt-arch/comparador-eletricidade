@@ -112,18 +112,25 @@
     var alvo = alvoResultados();
     if (!alvo) { S.formOpen = false; render(); return; }
     var topo = alvo.getBoundingClientRect().top + window.pageYOffset - MARGEM_TOPO;
-    if (topo > window.pageYOffset) window.scrollTo({ top: topo, behavior: 'smooth' }); else topo = window.pageYOffset;
+    if (topo > window.pageYOffset) rolar(topo, true); else topo = window.pageYOffset;
     var token = ++scrollToken;
     esperarScroll(topo, function () {
       if (token !== scrollToken || S.formOpen === false) return;
       var antes = alvoResultados(), yAntes = antes ? antes.getBoundingClientRect().top : 0;
       S.formOpen = false; render();
       var depois = alvoResultados();
-      if (depois) window.scrollTo({ top: window.pageYOffset + (depois.getBoundingClientRect().top - yAntes), behavior: 'auto' });
+      if (depois) rolar(window.pageYOffset + (depois.getBoundingClientRect().top - yAntes), false);
     });
   }
   var MARGEM_TOPO = 120, scrollToken = 0; /* a mesma margem do scroll-margin-top no CSS (barra de navegacao fixa) */
   function alvoResultados() { return document.querySelector('#lf-dp .el-anl, #lf-dp .el-banner, #lf-dp .dp-bar'); }
+  /* O site usa o Lenis (scroll suave). Um window.scrollTo durante uma animacao do Lenis (por exemplo, logo depois de a
+     pessoa rodar a roda do rato) e anulado por ele e a pagina nao desce. Com o Lenis presente, o scroll passa por ele. */
+  function rolar(y, suave) {
+    var L = window.lenis;
+    if (L && typeof L.scrollTo === 'function') L.scrollTo(y, { immediate: !suave, duration: suave ? 0.9 : 0, force: true, lock: suave });
+    else window.scrollTo({ top: y, behavior: suave ? 'smooth' : 'auto' });
+  }
   function esperarScroll(topo, fim) {
     /* chama fim() quando a pagina chega ao destino (ou desiste ao fim de 1,2 s, se a pessoa mexer entretanto) */
     var inicio = Date.now();
@@ -621,7 +628,7 @@
   document.addEventListener('click', function (e) {
     var t = e.target;
     if (!t.closest || !t.closest('#lf-dp') || t.closest('[data-stop]')) return;
-    if (t.closest('[data-cardtoggle]')) { if (!S.calculado) return; S.formOpen = !S.formOpen; render(); var c0 = document.querySelector('#lf-dp .dp-card, #lf-dp .el-strip'); if (c0 && c0.scrollIntoView) c0.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    if (t.closest('[data-cardtoggle]')) { if (!S.calculado) return; S.formOpen = !S.formOpen; render(); var c0 = document.querySelector('#lf-dp .dp-card, #lf-dp .el-strip'); if (c0) rolar(c0.getBoundingClientRect().top + window.pageYOffset - MARGEM_TOPO, true); return; }
     if (t.closest('[data-mais]')) { S.mais = !S.mais; render(); return; }
     if (t.closest('[data-recarregar]')) { S.erro = false; render(); carregarOfertas(0); return; }
     if (t.closest('[data-idx]')) { S.idx = !S.idx; S.visible = 10; render(); return; }
