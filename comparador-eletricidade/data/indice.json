@@ -1,7 +1,7 @@
 {
- "atualizado": "2026-10-27",
+ "atualizado": "2026-10-30",
  "fonte": "ERSE, ofertas comerciais comunicadas pelos comercializadores",
- "ofertas": 195,
+ "ofertas": 180,
  "perfis": [
   {
    "id": "p1",
@@ -15,10 +15,10 @@
     "oferta": "Eletricidade DD+FE - Digital",
     "id": "EDPC_13"
    },
-   "mediana": 500.75,
-   "comercializadores": 18,
-   "ofertas": 184,
-   "abaixo_regulado": 6
+   "mediana": 501.58,
+   "comercializadores": 19,
+   "ofertas": 169,
+   "abaixo_regulado": 5
   },
   {
    "id": "p2",
@@ -32,9 +32,9 @@
     "oferta": "Eletricidade DD+FE - Digital",
     "id": "EDPC_13"
    },
-   "mediana": 1232.12,
-   "comercializadores": 18,
-   "ofertas": 184,
+   "mediana": 1233.27,
+   "comercializadores": 19,
+   "ofertas": 169,
    "abaixo_regulado": 7
   },
   {
@@ -49,13 +49,13 @@
     "oferta": "Eletricidade DD+FE - Digital",
     "id": "EDPC_13"
    },
-   "mediana": 2687.29,
-   "comercializadores": 18,
-   "ofertas": 180,
+   "mediana": 2712.97,
+   "comercializadores": 19,
+   "ofertas": 165,
    "abaixo_regulado": 9
   }
  ],
- "comercializadores": 18,
+ "comercializadores": 19,
  "metodo": "Tarifa simples, sem tarifa social, sem ofertas indexadas e sem descontos de adesão à parte. Inclui IVA, IEC, contribuição audiovisual e taxa da DGEG.",
  "serie": [
   {
@@ -235,6 +235,24 @@
    "p3": {
     "melhor": 2240.24,
     "mediana": 2687.29,
+    "regulado": 2665.0
+   }
+  },
+  {
+   "data": "2026-10-30",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 501.58,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1233.27,
+    "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2712.97,
     "regulado": 2665.0
    }
   }
