@@ -6,8 +6,5 @@ caso 4.6 kVA, 3000 kWh: 24 resultados do simulador
 caso 1.15 kVA, 1000 kWh: 24 resultados do simulador
 ofertas com desconto de novo cliente em que a ERSE conta o desconto: 12
 ofertas com servicos obrigatorios comparadas sem o reembolso (a ERSE nao o conta): 8
-84 comparacoes, 4 fora da tolerancia de 0.1€
-[2, 1900, "END_69", "END", "Tarifa Aniversário + Plano Amigo", 437.39, 439.12, 439.12, {"reemb": 59.16, "dNovo": 0, "serv": 0, "en": 284.81, "tf": 136.95}, {"r": [17.781, 0.0833333333333333, 0.0833333333333333, 0.001]}, {"Id": "2", "PrecoAcesso": 178.04, "PrecoEnergia": 243.72, "PrecoTaxasImpostos": 69.03, "PrecoOutrosServicos": 0.0, "PrecoDescontoCondicionado": -53.4, "PrecoTotal": 437.39}]
-[5, 5000, "END_69", "END", "Tarifa Aniversário + Plano Amigo", 1158.1, 1162.61, 1162.61, {"reemb": 128.01, "dNovo": 0, "serv": 0, "en": 749.5, "tf": 315.73}, {"r": [17.781, 0.0833333333333333, 0.0833333333333333, 0.001]}, {"Id": "4", "PrecoAcesso": 428.91, "PrecoEnergia": 636.32, "PrecoTaxasImpostos": 206.09, "PrecoOutrosServicos": 0.0, "PrecoDescontoCondicionado": -113.22, "PrecoTotal": 1158.1}]
-[3, 3000, "END_69", "END", "Tarifa Aniversário + Plano Amigo", 683.87, 686.59, 686.59, {"reemb": 82.06, "dNovo": 0, "serv": 0, "en": 449.7, "tf": 193.16}, {"r": [17.781, 0.0833333333333333, 0.0833333333333333, 0.001]}, {"Id": "2", "PrecoAcesso": 265.72, "PrecoEnergia": 377.14, "PrecoTaxasImpostos": 115.04, "PrecoOutrosServicos": 0.0, "PrecoDescontoCondicionado": -74.03, "PrecoTotal": 683.87}]
-[0, 1000, "END_69", "END", "Tarifa Aniversário + Plano Amigo", 238.46, 239.38, 239.38, {"reemb": 39.33, "dNovo": 0, "serv": 0, "en": 149.9, "tf": 69.82}, {"r": [17.781, 0.0833333333333333, 0.0833333333333333, 0.001]}, {"Id": "2", "PrecoAcesso": 81.61, "PrecoEnergia": 138.11, "PrecoTaxasImpostos": 53.51, "PrecoOutrosServicos": 0.0, "PrecoDescontoCondicionado": -34.77, "PrecoTotal": 238.46}]
+ofertas com reembolso igual ao IEC comparadas com a regra da ERSE (conta-o duas vezes): 4
+84 comparacoes, 0 fora da tolerancia de 0.1€
