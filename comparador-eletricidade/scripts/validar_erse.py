@@ -47,7 +47,21 @@ def nossa(P, o, i, kwh, novo):
     d_novo = desc(o.get("d")) if novo else 0
     serv = o.get("cs") or 0
     total = en * iva_e + tf_iva + kwh * P["IEC"] * 1.23 + cav * 12 * 1.06 + serv - reemb - d_novo
-    return {"total": total, "reemb": reemb, "dNovo": d_novo, "serv": serv, "en": en, "tf": tf}
+    return {"total": total, "reemb": reemb, "dNovo": d_novo, "serv": serv, "en": en, "tf": tf, "ivaE": iva_e}
+
+
+def extra_erse_iec(P, o, kwh, iva_e):
+    """Desconto a mais que a ERSE da quando o reembolso em EUR/kWh cobre o IEC inteiro (0 nas outras ofertas).
+
+    Divergencia conhecida: na Tarifa Aniversario da Endesa (12.a fatura gratis) a coluna ReembW_ELE traz 0,001EUR/kWh, o IEC
+    inteiro de um ano. A ERSE conta esse valor duas vezes, uma delas sem IVA, e nao aplica a % da energia ao IEC. Nos contamos
+    uma vez, o que fica mais perto da fatura real (cerca de 1/12 do ano). Aqui somamos a diferenca para continuar a validar
+    o resto do calculo destas ofertas.
+    """
+    r = o.get("r")
+    if not r or r[3] < P["IEC"]:
+        return 0
+    return r[3] * kwh - r[2] * kwh * P["IEC"] * iva_e
 
 
 def variantes(p, k):
@@ -79,7 +93,7 @@ def main():
     P = dados["params"]
     ofertas = {o["id"]: o for o in dados["ofertas"] if o["f"][3] == "0" and "s" in o}
     casos = [(2, 1900), (5, 5000), (3, 3000), (0, 1000)]
-    problemas, vistos, com_novo, conhecidas = [], 0, 0, 0
+    problemas, vistos, com_novo, conhecidas, conhecidas_iec = [], 0, 0, 0, 0
     for i, kwh in casos:
         # O simulador da ERSE so devolve as ofertas que passam nos filtros do pedido. Pedimos com os filtros
         # da calibracao e com todos os filtros invertidos, e juntamos as duas respostas.
@@ -116,6 +130,11 @@ def main():
                 conhecidas += 1
                 n0 = {**n0, "total": n0["total"] + n0["reemb"]}
                 n1 = {**n1, "total": n1["total"] + n1["reemb"]}
+            extra = extra_erse_iec(P, o, kwh, n0["ivaE"])
+            if extra:
+                conhecidas_iec += 1
+                n0 = {**n0, "total": n0["total"] - extra}
+                n1 = {**n1, "total": n1["total"] - extra}
             d0, d1 = n0["total"] - erse, n1["total"] - erse
             if o.get("d") and abs(d1) < abs(d0):
                 com_novo += 1
@@ -127,6 +146,7 @@ def main():
                                   {k: r.get(k) for k in r if k != "Oferta"}))
     print(f"ofertas com desconto de novo cliente em que a ERSE conta o desconto: {com_novo}")
     print(f"ofertas com servicos obrigatorios comparadas sem o reembolso (a ERSE nao o conta): {conhecidas}")
+    print(f"ofertas com reembolso igual ao IEC comparadas com a regra da ERSE (conta-o duas vezes): {conhecidas_iec}")
     print(f"{vistos} comparacoes, {len(problemas)} fora da tolerancia de {tol}€")
     for p in problemas:
         print(json.dumps(p, ensure_ascii=False))
