@@ -105,6 +105,16 @@
     var n = Math.round((ds[1] - ds[0]) / 86400000) + 1;
     return n >= 7 && n <= 400 ? n : null;
   }
+  /* Uma so data: "18 de novembro 2026", "18 de novembro de 2026", "18/11/2026" ou "2026-11-18" */
+  function dataUma(t) {
+    var m = /(\d{4})-(\d{2})-(\d{2})/.exec(t); if (m) return data(+m[3], +m[2], +m[1]);
+    m = /(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/.exec(t); if (m) return data(+m[1], +m[2], +m[3]);
+    m = /(\d{1,2})\s*(?:de\s+)?([a-zç]{3,9})\.?\s*(?:de\s+)?(\d{4})/i.exec(t); if (m && mes(m[2])) return data(+m[1], mes(m[2]), +m[3]);
+    return null;
+  }
+  /* Tira os blocos do codigo QR da fatura (pedacos de 20 ou mais caracteres sem espacos, como "ZlXZpj51ZkPkZrvxwUuygXRF0ZlXZ"),
+     que o pdf.js mistura com o texto da mesma linha. Ficam os pedacos com aspeto de link ou de email. */
+  function semQR(t) { return t.replace(/\S{20,}/g, function (w) { return /[\/.@]/.test(w) ? w : ' '; }).replace(/\s+/g, ' ').trim(); }
 
   /* ---------- Leitura ---------- */
   function moda(vals) {
@@ -205,25 +215,43 @@
       if (tot > 0) { r.vazioPct = Math.round(rep.v / tot * 100); r.pontaPct = rep.p ? Math.round(rep.p / tot * 100) : null; }
     }
 
-    /* Precos: energia por kWh (sem IVA) e potencia por dia */
-    var pe = [], pp = [];
+    /* Precos: energia por kWh (sem IVA) e potencia por dia.
+       precoEnergia e precoPotencia sao os precos que a pessoa paga (ja com o desconto da linha, ver abaixo);
+       precoEnergiaTabela e precoPotenciaTabela sao os precos da linha antes do desconto, com descEnergiaPct e descPotenciaPct a dizer o desconto. */
+    var pe = [], peTab = [], pePct = [], pp = [], ppTab = [], ppPct = [];
     /* Desconto em percentagem na propria linha do preco, ex. EDP "31 dias 0,2891 € 8,96 € 20% (-1,79 €) 7,17 €": o preco
        que a pessoa paga e o da linha menos essa percentagem (0,2313 €), que e o que a ERSE publica para a oferta. */
     var RX_DESC = /(\d{1,2})\s*%\s*\(\s*-\s*\d/;
-    function descLinha(l, i) {
+    function pctLinha(l, i) {
       var m = RX_DESC.exec(l);
       /* o pdf.js pode por a coluna do desconto numa linha propria, logo a seguir: aceita-se se essa linha for so o desconto */
       if (!m && linhas[i + 1] && /^\s*\d{1,2}\s*%\s*\(\s*-\s*[\d.,]+\s*€?\s*\)\s*[\d.,]*\s*€?\s*(?:\d{1,2}\s*%)?\s*$/.test(linhas[i + 1])) m = RX_DESC.exec(linhas[i + 1]);
-      return m ? 1 - dec(m[1]) / 100 : 1;
+      return m ? dec(m[1]) : 0;
     }
+    function r4(v) { return Math.round(v * 1e4) / 1e4; }
     linhas.forEach(function (l, i) {
       var k = /\d[\d.]*\s*kWh\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l);
-      if (k && !/redes|acesso|imposto|IEC|tarifa social|regula[çc]/i.test(l)) { var v = dec(k[1]) * descLinha(l, i); if (v > 0.03 && v < 0.6) pe.push(Math.round(v * 1e4) / 1e4); }
+      if (k && !/redes|acesso|imposto|IEC|tarifa social|regula[çc]/i.test(l)) {
+        var pct = pctLinha(l, i), tab = dec(k[1]), v = tab * (1 - pct / 100);
+        if (v > 0.03 && v < 0.6) { pe.push(r4(v)); peTab.push(r4(tab)); pePct.push(pct); }
+      }
       var d = /\d{1,3}\s*dias\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l);
-      if (d && /pot[êe]ncia/i.test(l + ' ' + (linhas[i - 1] || '')) && !/redes|acesso|audiovisual/i.test(l)) { var w = dec(d[1]) * descLinha(l, i); if (w > 0.03 && w < 6) pp.push(Math.round(w * 1e4) / 1e4); }
+      if (d && /pot[êe]ncia/i.test(l + ' ' + (linhas[i - 1] || '')) && !/redes|acesso|audiovisual/i.test(l)) {
+        var pctP = pctLinha(l, i), tabP = dec(d[1]), w = tabP * (1 - pctP / 100);
+        if (w > 0.03 && w < 6) { pp.push(r4(w)); ppTab.push(r4(tabP)); ppPct.push(pctP); }
+      }
     });
-    r.precoEnergia = pe.filter(function (v, i, a) { return a.indexOf(v) === i; });
+    /* precos unicos, pela ordem em que aparecem; para cada um guarda-se o preco de tabela e o maior desconto de linha visto */
+    var vistos = {};
+    r.precoEnergia = []; r.precoEnergiaTabela = []; r.descEnergiaPct = 0;
+    pe.forEach(function (v, j) {
+      if (vistos[v]) return;
+      vistos[v] = 1; r.precoEnergia.push(v); r.precoEnergiaTabela.push(peTab[j]);
+      if (pePct[j] > r.descEnergiaPct) r.descEnergiaPct = pePct[j];
+    });
     r.precoPotencia = pp.length ? pp[pp.length - 1] : null;
+    r.precoPotenciaTabela = pp.length ? ppTab[pp.length - 1] : null;
+    r.descPotenciaPct = pp.length ? ppPct[pp.length - 1] : 0;
     /* Alguns comercializadores (ex.: Endesa) faturam o acesso as redes em linhas separadas. Os precos da ERSE incluem-no,
        por isso soma-se o termo fixo (por dia) a potencia e o termo variavel (por kWh) a energia. Fica o valor mais recente. */
     var rp = [], re_ = [], redesAnuladas = false;
@@ -237,8 +265,9 @@
       var k = /\d[\d.]*\s*kWh\s+(?:\d{1,2}%\s+)?(\d[,.]\d{3,6})\s*€?/i.exec(l); if (k) { var v = dec(k[1]); if (v > 0.005 && v < 0.3) re_.push(v); }
     });
     r.redesSeparadas = !!(rp.length || re_.length);
-    if (rp.length && r.precoPotencia) r.precoPotencia = Math.round((r.precoPotencia + rp[rp.length - 1]) * 1e6) / 1e6;
-    if (re_.length) r.precoEnergia = r.precoEnergia.map(function (v) { return Math.round((v + re_[re_.length - 1]) * 1e6) / 1e6; });
+    function maisRedes(v, x) { return Math.round((v + x) * 1e6) / 1e6; }
+    if (rp.length && r.precoPotencia) { r.precoPotencia = maisRedes(r.precoPotencia, rp[rp.length - 1]); r.precoPotenciaTabela = maisRedes(r.precoPotenciaTabela, rp[rp.length - 1]); }
+    if (re_.length) { r.precoEnergia = r.precoEnergia.map(function (v) { return maisRedes(v, re_[re_.length - 1]); }); r.precoEnergiaTabela = r.precoEnergiaTabela.map(function (v) { return maisRedes(v, re_[re_.length - 1]); }); }
 
     /* Descontos percentuais aplicados sobre os precos (ex.: Endesa "Desconto Debito Direto (11,27 € x 7,00%) + Desconto Fatura Digital (... x 7,00%)") */
     r.descontoPct = 0;
@@ -247,6 +276,28 @@
       var soma = 0, n = 0, mm, rx = /x\s*(\d+[,.]\d+)\s*%/g;
       while ((mm = rx.exec(l))) { soma += dec(mm[1]); n++; }
       if (n && soma > 0 && soma < 50 && soma > r.descontoPct) r.descontoPct = Math.round(soma * 100) / 100;
+    });
+
+    /* Desconto de campanha com prazo, ex. EDP "35% desconto (Campanha Jovem sub-35 + débito direto + fatura eletrónica até 18 de novembro 2026)":
+       o preco com desconto so vale ate essa data, por isso o comparador usa os precos de tabela como base e mostra os dois.
+       So conta se a percentagem for a de um desconto que esta mesmo aplicado nos precos (nas linhas do preco ou nas linhas de desconto),
+       para uma mensagem de publicidade da fatura nao passar por campanha. "Para sempre" nao e campanha com prazo.
+       O pdf.js pode partir o texto por varias linhas e meter-lhe pelo meio os blocos do codigo QR. */
+    r.campanha = null;
+    var aplicados = [r.descEnergiaPct, r.descPotenciaPct, r.descontoPct].filter(function (p) { return p > 0; });
+    linhas.forEach(function (l, i) {
+      if (r.campanha || !aplicados.length || !/desconto/i.test(l) || !/\d\s*%/.test(l)) return;
+      var txt = semQR([l, linhas[i + 1] || '', linhas[i + 2] || '', linhas[i + 3] || ''].join(' '));
+      var m = /(\d{1,2}(?:[,.]\d{1,2})?)\s*%\s*(?:de\s+)?desconto|desconto\s*(?:de\s+)?(\d{1,2}(?:[,.]\d{1,2})?)\s*%/i.exec(txt);
+      if (!m) return;
+      var p = dec(m[1] || m[2]);
+      if (!aplicados.some(function (x) { return Math.abs(x - p) < 0.5; })) return;
+      var a = txt.indexOf('('), b = a >= 0 ? txt.indexOf(')', a) : -1, desc = b > a ? txt.slice(a + 1, b) : txt.slice(0, 160);
+      var ate = /\bat[ée]\s+(?:ao?\s+)?(?:dia\s+)?(\d{1,2}\s*(?:de\s+)?[a-zç]{3,9}\.?\s*(?:de\s+)?\d{4}|\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4}|\d{4}-\d{2}-\d{2})/i.exec(desc);
+      var meses = /(?:durante|primeiros?)\s+(?:os\s+)?(\d{1,2})\s+meses/i.exec(desc);
+      if (/para\s+sempre/i.test(desc) || (!ate && !meses)) return;
+      var fim = ate ? dataUma(ate[1]) : null;
+      r.campanha = { pct: p, texto: desc.trim(), ate: fim ? fim.toISOString().slice(0, 10) : null, meses: meses ? +meses[1] : null };
     });
 
     /* Total a pagar da fatura (com IVA): "TOTAL A DEBITAR 46,74 €", "Total com IVA 55,39 €", "Quanto tenho a pagar? ... 74,28 €" (EDP, nas linhas seguintes) */
