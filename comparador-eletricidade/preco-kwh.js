@@ -107,9 +107,12 @@
   function num(v, n) { return v.toFixed(n).replace('.', ','); }
   function data(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; }
   function nome(c, d) { return NOMES[c] || (d.nomes && d.nomes[c]) || c; }
+  /* Links de parceiros (afiliacao): substituem o link da ERSE nas tabelas. Endesa via Suebi (nov 2026); manter igual ao comparador-eletricidade.js */
+  var LINK_PARCEIRO = { END: 'https://tracking.suebiads.com/B8B25F/38QT3FR/?uid=2072&sub1=literaciafinanceira' };
   function link(o, txt) {
-    var u = /^https?:\/\//i.test(o.u || '') ? o.u : '';
-    return u ? '<a href="' + esc(u) + '" target="_blank" rel="nofollow noopener">' + esc(txt) + '</a>' : esc(txt);
+    var p = LINK_PARCEIRO[o.c];
+    var u = p || (/^https?:\/\//i.test(o.u || '') ? o.u : '');
+    return u ? '<a href="' + esc(u) + '" target="_blank" rel="' + (p ? 'sponsored nofollow noopener' : 'nofollow noopener') + '">' + esc(txt) + '</a>' : esc(txt);
   }
   function tabela(cab, linhas) {
     return '<div class="table-content"><table><thead><tr>' + cab.map(function (h) { return '<th>' + h + '</th>'; }).join('') +

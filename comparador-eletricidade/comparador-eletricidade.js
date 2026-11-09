@@ -148,8 +148,11 @@
   function linkFraco(u) { return !u || /\.pdf(\?|$)|\/faq|perguntas-frequentes|\/contact/i.test(u) || /^https?:\/\/[^\/]+\/?$/i.test(u); }
   function host(u) { var m = /^https?:\/\/(?:www\.)?([^\/]+)/i.exec(u || ''); return m ? m[1].toLowerCase() : ''; }
   var LINK_COM = null; /* por site, a pagina de ofertas mais usada nas suas ofertas (para quando a da oferta e um PDF) */
+  /* Links de parceiros (afiliacao): substituem o link da ERSE no botao. Endesa via Suebi (nov 2026); manter igual ao preco-kwh.js */
+  var LINK_PARCEIRO = { END: 'https://tracking.suebiads.com/B8B25F/38QT3FR/?uid=2072&sub1=literaciafinanceira' };
   function linkOferta(o) {
-    if (o.ce && !linkFraco(o.ce) && (linkFraco(o.u) || /campanha|promo/i.test(o.ce) && !/campanha|promo/i.test(o.u || ''))) return o.ce;
+    if (LINK_PARCEIRO[o.c]) return LINK_PARCEIRO[o.c];
+    if (o.ce &&!linkFraco(o.ce) && (linkFraco(o.u) || /campanha|promo/i.test(o.ce) && !/campanha|promo/i.test(o.u || ''))) return o.ce;
     if (!linkFraco(o.u)) return o.u;
     if (/^https?:/i.test(o.web || '') && !linkFraco(o.web)) return o.web;
     if (!LINK_COM && S.data) {
@@ -354,7 +357,7 @@
     else poup = '<div class="el-poup is-ref">Igual ' + ref + '</div>';
 
     var ek = energiaKpi(r), link = url(linkOferta(o));
-    var cta = link ? '<a class="dp-btn" href="' + link + '" target="_blank" rel="nofollow noopener" data-stop>Ir para a ' + esc(o.c === 'TUR' ? 'SU Eletricidade' : nome) + ico(IC.out) + '</a>' : '';
+    var cta = link ? '<a class="dp-btn" href="' + link + '" target="_blank" rel="' + (LINK_PARCEIRO[o.c] ? 'sponsored nofollow noopener' : 'nofollow noopener') + '" data-stop>Ir para a ' + esc(o.c === 'TUR' ? 'SU Eletricidade' : nome) + ico(IC.out) + '</a>' : '';
 
     var h = '<div class="dp-c' + (aberto ? ' is-open' : '') + '" data-id="' + esc(o.id) + '"><div class="dp-c-main">' +
       '<div class="dp-rank">' + (idx + 1) + '</div>' +
