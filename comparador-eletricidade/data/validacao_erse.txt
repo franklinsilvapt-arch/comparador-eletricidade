@@ -4,7 +4,7 @@ campos da oferta: ['CodOferta', 'Comercializador', 'CondicoesGeraisContrato', 'C
 caso 6.9 kVA, 5000 kWh: 24 resultados do simulador
 caso 4.6 kVA, 3000 kWh: 24 resultados do simulador
 caso 1.15 kVA, 1000 kWh: 24 resultados do simulador
-ofertas com desconto de novo cliente em que a ERSE conta o desconto: 12
+ofertas com desconto de novo cliente em que a ERSE conta o desconto: 16
 ofertas com servicos obrigatorios comparadas sem o reembolso (a ERSE nao o conta): 8
 ofertas com reembolso igual ao IEC comparadas com a regra da ERSE (conta-o duas vezes): 4
-84 comparacoes, 0 fora da tolerancia de 0.1€
+76 comparacoes, 0 fora da tolerancia de 0.1€
