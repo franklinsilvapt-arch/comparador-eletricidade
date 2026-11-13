@@ -588,7 +588,7 @@
       var refTot = meu ? meu.r.total : (eurM ? S.eurIn * 12 : null);
       var nMais = refTot ? res.todos.filter(function (it) { return it.r.total < refTot - 0.5; }).length : 0;
       var soMelhor = S.ver !== 'todas' && !S.com;
-      banner = '<p class="el-banner">' + (refTot && nMais ? '🎉 Há <b>' + nMais + '</b> ofertas mais baratas do que ' + (meu && temp ? 'o teu tarifário sem o desconto' : 'a tua') : 'Há <b>' + res.nOfertas + '</b> ofertas para o teu consumo') + (soMelhor ? '. Mostramos a melhor de cada comercializador ↓' : ' ↓') + '</p>';
+      banner = '<p class="el-banner">' + (refTot && nMais ? '🎉 Há <b>' + nMais + '</b> ' + (nMais === 1 ? 'oferta mais barata' : 'ofertas mais baratas') + ' do que ' + (meu && temp ? 'o teu tarifário sem o desconto' : 'a tua') : 'Há <b>' + res.nOfertas + '</b> ofertas para o teu consumo') + (soMelhor ? '. Mostramos a melhor de cada comercializador ↓' : ' ↓') + '</p>';
     }
     root.innerHTML = cabecalho() + (faixa ? faixa + ANALISE : '') +
       (faixa ? '' : '<div class="dp-card is-open"><button type="button" class="dp-card-toggle" data-cardtoggle aria-expanded="true"' + (S.calculado ? '' : ' disabled') + '><span><span class="dp-card-toggle-t">Consumo, potência e tarifa</span><span class="dp-card-toggle-s">' + resumo + '</span></span>' + (S.calculado ? CARET : '') + '</button>' +
@@ -1003,7 +1003,7 @@
     }
     /* mercado */
     var pct = res.todos.length ? Math.round(cheaper / res.todos.length * 100) : 0;
-    itens.push(['bars', '<b>Mercado:</b> ' + cheaper + ' das ' + res.todos.length + ' ofertas são mais baratas do que ' + (temp ? 'o teu tarifário sem o desconto' : 'a tua') + (hoje ? ' (com o desconto, ' + (cheaperHoje ? cheaperHoje : 'nenhuma') + ')' : '') + '.<span class="el-anl-bar"><span style="width:' + pct + '%"></span></span>']);
+    itens.push(['bars', '<b>Mercado:</b> ' + cheaper + ' das ' + res.todos.length + ' ofertas ' + (cheaper === 1 ? 'é mais barata' : 'são mais baratas') + ' do que ' + (temp ? 'o teu tarifário sem o desconto' : 'a tua') + (hoje ? ' (com o desconto, ' + (cheaperHoje ? cheaperHoje : 'nenhuma') + ')' : '') + '.<span class="el-anl-bar"><span style="width:' + pct + '%"></span></span>']);
     return '<div class="el-anl"><div class="el-anl-h"><div><div class="el-anl-k">Análise da tua fatura</div><div class="el-anl-big' + (difMes >= 1 && !temp ? ' is-pos' : '') + '">' + big + '</div><p class="el-anl-sub">' + sub + '</p></div><span class="el-anl-ico">' + ico(IC.lupa) + '</span></div>' +
       '<ul class="el-anl-l">' + itens.map(function (x) { return '<li><span class="el-anl-i">' + ico(IC[x[0]]) + '</span><span>' + x[1] + '</span></li>'; }).join('') + '</ul></div>';
   }
