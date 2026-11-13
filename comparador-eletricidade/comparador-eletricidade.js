@@ -39,7 +39,7 @@
   /* Leitor por AI (funcao no Vercel, repositorio pedrofintech/lf-site-assets, leitor-fatura/api/ler.js). So e chamado depois de a pessoa aceitar. */
   var AI_URL = 'https://lf-site-assets-leitor-fatura.vercel.app/api/ler';
   /* O CSS e carregado pelo proprio script com a mesma versao, para nunca ficar um CSS antigo em cache com um JS novo */
-  var VERSAO = '20261027';
+  var VERSAO = '20261113';
   (function () {
     var href = BASE + 'comparador-eletricidade.css?v=' + VERSAO;
     if (document.querySelector('link[href="' + href + '"]')) return;
@@ -260,10 +260,12 @@
     return null;
   }
   function regulada() { for (var i = 0; i < S.data.ofertas.length; i++) if (S.data.ofertas[i].c === 'TUR') return S.data.ofertas[i]; return null; }
+  /* Fatura do regulado com os dados do formulario (F): a estimativa do consumo a partir do valor pago tem de usar
+     a potencia e as opcoes que a pessoa escolheu agora, nao as da ultima simulacao. */
   function faturaRegulada(kwhAno) {
-    var t = regulada(), c = ctx(); c.kwh = kwhAno;
+    var t = regulada(), c = { kwh: kwhAno, vz: F.vazio / 100, pt: F.ponta / 100, novo: F.novo, fam: F.fam, social: F.social, omie: S.omie, ciclo: F.ciclo };
     if (!t) return null;
-    return calcOpcao(t, S.pot, c, 's') || calcOpcao(t, S.pot, c, 't');
+    return calcOpcao(t, F.pot, c, 's') || calcOpcao(t, F.pot, c, 't');
   }
   /* Quem so sabe quanto paga: estima o consumo que da essa fatura aos precos do mercado regulado */
   function kwhDaFatura(eurMes) {
@@ -845,9 +847,13 @@
       if (dE) r.precoEnergia = r.precoEnergia.map(function (v) { return r4(v * (1 - dE / 100)); });
       if (dP && r.precoPotencia) r.precoPotencia = r4(r.precoPotencia * (1 - dP / 100));
       r.campanha = (dE || dP) && (j.desconto_ate || j.desconto_meses) ? { pct: dE || dP, texto: j.desconto_texto || '', ate: /^\d{4}-\d{2}-\d{2}$/.test(j.desconto_ate || '') ? j.desconto_ate : null, meses: j.desconto_meses > 0 ? j.desconto_meses : null } : null;
-      if (!r.pot) r.avisos.push('potência contratada');
-      if (!r.kwhMes) r.avisos.push(r.kwh ? 'dias do período de faturação' : 'consumo em kWh');
-      aplicarFatura(r);
+      /* o consumo devolvido pela AI tambem tem de bater certo com o total da fatura (mesma regra do leitor do browser) */
+      return carregarFatura().then(function (L) {
+        L.validarConsumo(r);
+        if (!r.pot) r.avisos.push('potência contratada');
+        if (!r.kwhMes && !r.kwhIncoerente) r.avisos.push(r.kwh ? 'dias do período de faturação' : 'consumo em kWh');
+        aplicarFatura(r);
+      });
     }).catch(function (e) { S.fat = { erro: (e && e.message) || ERROS_AI.servico }; render(); });
   }
   function maisPerto(lista, v) { var best = lista[0]; lista.forEach(function (x) { if (Math.abs(x - v) < Math.abs(best - v)) best = x; }); return best; }
@@ -960,6 +966,10 @@
       sub = fat + (hoje ? (hoje.daFatura ? 'Com o desconto, dá <b>' + eur(hoje.mes) + '</b> num mês médio. ' : 'Aos preços dela, com o desconto, um mês custa <b>' + eur(hoje.mes) + '</b>. ') : '') +
         'Sem o desconto, o mesmo consumo custa <b>' + eur(meu.r.mes) + '</b> por mês' + (S.fat.meuSemDesconto ? ' (' + esc(meu.o.n) + ')' : '') + '. ' +
         (difMes >= 1 ? 'A oferta mais barata, da ' + nomeM + ', fica em <b>' + eur(m.r.mes) + '</b>: <b>' + eur(difMes) + '</b> a menos por mês do que o teu tarifário sem o desconto.' : 'A oferta mais barata fica em ' + eur(m.r.mes) + ': mesmo sem o desconto, estás perto do melhor preço.');
+    } else if (difMes <= -5 && m.r.mes > meu.r.mes * 1.3) {
+      /* A oferta mais barata do mercado custa bem mais do que a pessoa paga: o consumo ou o valor nao batem certo */
+      big = 'Confirma o teu consumo';
+      sub = fat + mes + 'Com ' + milhar(String(Math.round(S.kwhMes))) + ' kWh por mês, a oferta mais barata ficaria em ' + eur(m.r.mes) + ', mais do que pagas hoje. O consumo ou o valor não batem certo: confirma os kWh por mês na tua fatura e corrige-os nos dados acima.';
     } else if (difMes >= 1) {
       big = 'Podes poupar ' + eurInt(difMes * 12) + ' por ano';
       sub = fat + mes + 'Com a oferta mais barata, da ' + nomeM + ', ficaria em <b>' + eur(m.r.mes) + '</b>, menos <b>' + eur(difMes) + '</b> por mês.';
@@ -1029,6 +1039,7 @@
     else if (r.indexada) h += '<p>Tens um tarifário indexado, com preço que muda todos os meses, por isso não dá para o reconhecer pelos preços. Para a poupança ser face ao que pagas, põe ao lado o valor da fatura em euros.</p>';
     else if (F.meuCom) h += '<p>Não reconhecemos o tarifário' + (r.plano ? ' "' + esc(r.plano) + '"' : '') + ' pelos preços. Escolhe-o em baixo, se o encontrares, para a poupança ser face ao que pagas.</p>';
     else if (com) h += '<p>A ' + esc(com) + ' não tem ofertas no comparador neste momento, por isso a poupança é face ao mercado regulado.</p>';
+    if (r.kwhIncoerente) h += '<p>Lemos <b>' + milhar(String(r.kwhLido)) + ' kWh</b> na fatura, um valor que não bate certo com o total de ' + eur(r.total) + '. Por isso a simulação usa o total da fatura. Confirma o consumo em kWh na fatura e põe-no ao lado.</p>';
     if (f.faltas.length) h += '<p>Não encontrámos na fatura: <b>' + esc(f.faltas.join(', ')) + '</b>.' + (f.podeAI ? '' : ' Preenche ao lado.') + '</p>';
     if (f.podeAI) h += blocoAI(f);
     if (r.ai) h += '<p class="el-fat-nota">Lida com AI. Confirma os valores antes de comparar.</p>';

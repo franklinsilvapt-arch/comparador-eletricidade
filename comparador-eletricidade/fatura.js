@@ -39,6 +39,18 @@
 
   function num(s) { return parseFloat(String(s).replace(/\./g, '').replace(',', '.')); }
   function dec(s) { return parseFloat(String(s).replace(',', '.')); }
+  /* Quantidade em kWh, em qualquer formato: "2750", "2.750", "2750,12", "2.750,12", "2750.12".
+     Com virgula, a virgula e a casa decimal e os pontos sao milhares. So com ponto: grupos de 3 algarismos sao milhares
+     ("2.750", "1.234.567"), o resto e casa decimal ("2750.12"). "312.456" fica ambiguo e le-se como milhares;
+     o total da fatura decide depois (ver plausivel). */
+  var RX_KWH = /(\d[\d.,]*\d|\d)\s*kWh/i;
+  function numKwh(s) {
+    s = String(s);
+    if (s.indexOf(',') >= 0) return parseFloat(s.replace(/\./g, '').replace(',', '.'));
+    if (/^\d{1,3}(?:\.\d{3})+$/.test(s)) return parseFloat(s.replace(/\./g, ''));
+    return parseFloat(s);
+  }
+  function ambiguoMilhar(s) { return /^\d{1,3}\.\d{3}$/.test(String(s)); }
 
   var lib = null;
   function carregarPdfjs() {
@@ -173,11 +185,11 @@
     }
 
     /* kWh do periodo: o Imposto Especial de Consumo incide sobre todos os kWh, por isso e a melhor fonte */
-    var kwhIec = 0, temIec = false;
+    var kwhIec = 0, temIec = false, kwhAmbiguo = false;
     linhas.forEach(function (l) {
       if (/imposto\s+especial|\bIEC\b/i.test(l) && !/0,001\s*€\s*por\s*kWh/i.test(l) && !/abate|acerto|estorno/i.test(l) && !foraDoPeriodo(l)) {
-        var k = /(\d[\d.]*)\s*kWh/i.exec(l);
-        if (k && !/-\s*\d[\d.]*\s*kWh/.test(l)) { kwhIec += num(k[1]); temIec = true; }
+        var k = RX_KWH.exec(l);
+        if (k && !/-\s*\d[\d.,]*\s*kWh/.test(l)) { kwhIec += numKwh(k[1]); temIec = true; if (ambiguoMilhar(k[1])) kwhAmbiguo = true; }
       }
     });
     r.kwh = temIec && kwhIec > 0 ? Math.round(kwhIec) : null;
@@ -185,7 +197,7 @@
       var soma = 0, tem = false;
       linhas.forEach(function (l) {
         if (/termo\s+de\s+energia|energia\s+ativa|^\s*eletricidade\s*-\s*energia|consumo\s+(?:real|estimado)/i.test(l) && !/redes|acesso|abate|acerto|estorno/i.test(l) && !foraDoPeriodo(l)) {
-          var k = /(\d[\d.]*)\s*kWh/i.exec(l); if (k && !/-\s*\d[\d.]*\s*kWh/.test(l)) { soma += num(k[1]); tem = true; }
+          var k = RX_KWH.exec(l); if (k && !/-\s*\d[\d.,]*\s*kWh/.test(l)) { soma += numKwh(k[1]); tem = true; if (ambiguoMilhar(k[1])) kwhAmbiguo = true; }
         }
       });
       if (tem && soma > 0) r.kwh = Math.round(soma);
@@ -194,19 +206,19 @@
 
     /* Repartição por periodo horario (vazio, ponta, cheias) */
     var rep = null;
-    m = /Cheias?:\s*([\d.]+)\s*kWh\s*\|\s*Ponta:\s*([\d.]+)\s*kWh\s*\|\s*Vazio:\s*([\d.]+)\s*kWh/i.exec(flat);
-    if (m) rep = { c: num(m[1]), p: num(m[2]), v: num(m[3]) };
+    m = /Cheias?:\s*(\d[\d.,]*)\s*kWh\s*\|\s*Ponta:\s*(\d[\d.,]*)\s*kWh\s*\|\s*Vazio:\s*(\d[\d.,]*)\s*kWh/i.exec(flat);
+    if (m) rep = { c: numKwh(m[1]), p: numKwh(m[2]), v: numKwh(m[3]) };
     if (!rep) {
-      m = /(\d[\d.]*)\s*kWh\s*\([^)]*\)\s*em\s*vazio,?\s*(\d[\d.]*)\s*kWh\s*\([^)]*\)\s*em\s*ponta\s*e\s*(\d[\d.]*)\s*kWh\s*\([^)]*\)\s*em\s*cheias/i.exec(flat);
-      if (m) rep = { v: num(m[1]), p: num(m[2]), c: num(m[3]) };
+      m = /(\d[\d.,]*)\s*kWh\s*\([^)]*\)\s*em\s*vazio,?\s*(\d[\d.,]*)\s*kWh\s*\([^)]*\)\s*em\s*ponta\s*e\s*(\d[\d.,]*)\s*kWh\s*\([^)]*\)\s*em\s*cheias/i.exec(flat);
+      if (m) rep = { v: numKwh(m[1]), p: numKwh(m[2]), c: numKwh(m[3]) };
     }
     if (!rep) {
       var acc = { v: 0, fv: 0, p: 0, c: 0 }, achou = false;
       linhas.forEach(function (l) {
-        var k = /(\d[\d.]*)\s*kWh\b.*?\d[,.]\d{3,}/i.exec(l);
+        var k = /(\d[\d.,]*\d|\d)\s*kWh\b.*?\d[,.]\d{3,}/i.exec(l);
         if (!k) return;
         var lab = /fora\s+(?:de\s+)?vazio/i.test(l) ? 'fv' : /\bvazio\b/i.test(l) ? 'v' : /\bponta\b/i.test(l) ? 'p' : /\bcheias?\b/i.test(l) ? 'c' : null;
-        if (lab && !/redes|acesso/i.test(l)) { acc[lab] += num(k[1]); achou = true; }
+        if (lab && !/redes|acesso/i.test(l)) { acc[lab] += numKwh(k[1]); achou = true; }
       });
       if (achou && acc.v > 0) rep = { v: acc.v, p: acc.p, c: acc.c + acc.fv };
     }
@@ -321,8 +333,32 @@
     r.plano = m ? m[1].trim() : null;
     r.indexada = /indexad[ao]\s+ao\s+pre[çc]o|tarifa\s+indexada|pre[çc]o\s+indexado|mercado\s+spot/i.test(flat);
 
+    /* O consumo lido tem de bater certo com o total da fatura. "312.456 kWh" pode ser 312 kWh com casas decimais:
+       se lido como milhares nao bate certo, tenta-se a outra leitura. Se nenhuma bater certo, o consumo nao se usa. */
+    if (r.kwh && kwhAmbiguo && plausivel(r.kwh, r.dias, r.total) === 'alto' && plausivel(Math.round(r.kwh / 1000), r.dias, r.total) === 'ok') {
+      r.kwh = Math.round(r.kwh / 1000); r.kwhMes = r.dias ? Math.round(r.kwh / r.dias * 365.25 / 12) : null;
+    }
+    validarConsumo(r);
     if (!r.pot) r.avisos.push('potência contratada');
-    if (!r.kwhMes) r.avisos.push(r.kwh ? 'dias do período de faturação' : 'consumo em kWh');
+    if (!r.kwhMes && !r.kwhIncoerente) r.avisos.push(r.kwh ? 'dias do período de faturação' : 'consumo em kWh');
+    return r;
+  }
+
+  /* Consumo face ao total da fatura (com IVA): 'alto' se so a energia, a 0,05€ por kWh, ja passasse o total; 'baixo' se nem
+     com energia a 0,50€ por kWh, potencia de 41,4 kVA e taxas se chegasse ao total; 'ok' no resto ou sem total. */
+  function plausivel(kwh, dias, total) {
+    if (!kwh || !total) return 'ok';
+    if (kwh * 0.05 > total) return 'alto';
+    if (kwh * 0.5 + (dias || 31) * 2.6 + 15 < total) return 'baixo';
+    return 'ok';
+  }
+  /* Consumo que nao bate certo com o total, ou acima de 20.000 kWh por mes sem total para comparar: fica de fora
+     (kwhLido guarda o valor) e o comparador usa o total da fatura. Serve tambem para a leitura por AI. */
+  function validarConsumo(r) {
+    var p = plausivel(r.kwh, r.dias, r.total);
+    if (r.kwh && (p !== 'ok' || (r.kwhMes && r.kwhMes > 20000))) {
+      r.kwhLido = r.kwh; r.kwhIncoerente = true; r.kwh = null; r.kwhMes = null;
+    }
     return r;
   }
 
@@ -340,5 +376,5 @@
     });
   }
 
-  root.LF_FATURA = { ler: ler, analisar: analisar, linhasDaPagina: linhasDaPagina };
+  root.LF_FATURA = { ler: ler, analisar: analisar, linhasDaPagina: linhasDaPagina, validarConsumo: validarConsumo };
 })(typeof window !== 'undefined' ? window : (typeof module !== 'undefined' ? module.exports : this));
