@@ -129,5 +129,20 @@ const bi = [
 r = LF.analisar(bi);
 igual('bi-horaria: precos', [r.tarifa, r.ciclo, r.precoEnergia, r.precoEnergiaTabela, r.precoPotencia, r.campanha], ['b', 'd', [0.19, 0.11], [0.19, 0.11], 0.45, null]);
 
+/* 9. Consumo em kWh com casas decimais e com separador de milhares (caso real: "2750.12 kWh" lido como 275.012 kWh) */
+const baseKwh = ['Período de faturação: 01/10/2026 a 31/10/2026', 'Potência contratada 13,80 kVA', 'Tarifa Simples', 'Potência 31 dias 0,8754 € 27,14 €'];
+function kwh(linha, total) { const r = LF.analisar([...baseKwh, linha, 'Total com IVA ' + (total || '485,81') + ' €']); return [r.kwh, r.kwhMes, !!r.kwhIncoerente]; }
+igual('kwh: inteiro', kwh('Imposto Especial de Consumo 2750 kWh 0,001 € 2,75 €'), [2750, 2700, false]);
+igual('kwh: milhares com ponto', kwh('Imposto Especial de Consumo 2.750 kWh 0,001 € 2,75 €'), [2750, 2700, false]);
+igual('kwh: decimal com virgula', kwh('Imposto Especial de Consumo 2750,12 kWh 0,001 € 2,75 €'), [2750, 2700, false]);
+igual('kwh: milhares e decimal', kwh('Imposto Especial de Consumo 2.750,12 kWh 0,001 € 2,75 €'), [2750, 2700, false]);
+igual('kwh: decimal com ponto', kwh('Imposto Especial de Consumo 2750.12 kWh 0,001 € 2,75 €'), [2750, 2700, false]);
+igual('kwh: decimal com ponto, 3 casas', kwh('Imposto Especial de Consumo 312.456 kWh 0,001 € 0,31 €', '78,40'), [312, 306, false]);
+igual('kwh: 1.234.567 sem bater com o total fica de fora', kwh('Imposto Especial de Consumo 1.234.567 kWh 0,001 € 1,23 €'), [null, null, true]);
+igual('kwh: termo de energia com decimal', kwh('Termo de energia 2750,5 kWh 0,1400 € 385,07 €'), [2751, 2701, false]);
+igual('kwh: muito baixo para o total fica de fora', kwh('Imposto Especial de Consumo 12 kWh 0,001 € 0,01 €'), [null, null, true]);
+r = LF.validarConsumo({ avisos: [], kwh: 275012, kwhMes: 270022, dias: 31, total: 485.81 });
+igual('kwh: validacao da leitura por AI', [r.kwh, r.kwhMes, r.kwhLido, r.kwhIncoerente], [null, null, 275012, true]);
+
 console.log(falhas ? '\n' + falhas + ' teste(s) com erro' : '\nTodos os testes passaram');
 process.exit(falhas ? 1 : 0);
