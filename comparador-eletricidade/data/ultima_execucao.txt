@@ -1,2 +1,2 @@
-2026-11-16T15:49:34 ficheiro ERSE de 2026-11-13, 293 ofertas, 12 dos sites
-sem avisos
+2026-11-17T16:03:35 ficheiro ERSE de 2026-11-13, 293 ofertas, 12 dos sites
+CALIBRACAO FALHOU, ficam os parametros anteriores: mercado regulado em falta na resposta do simulador
