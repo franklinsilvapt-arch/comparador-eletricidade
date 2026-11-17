@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main  # um re-run usa o main atual, nao o commit antigo
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -27,5 +29,5 @@ jobs:
           git config user.email "bot@literaciafinanceira.pt"
           git add comparador-eletricidade/data/ofertas.json comparador-eletricidade/data/omie.json comparador-eletricidade/data/omie_qh.json
           git commit -m "Ofertas da ERSE e preços OMIE atualizados" || echo "sem alterações"
-          git pull --rebase
+          git pull --rebase -X theirs
           git push

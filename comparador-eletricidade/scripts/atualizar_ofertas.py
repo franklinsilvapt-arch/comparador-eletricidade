@@ -216,7 +216,11 @@ def publicar(mensagem):
     git("add", "-A", "data", "logos")
     if subprocess.run(["git", "-C", RAIZ, "diff", "--cached", "--quiet"]).returncode:
         git("commit", "-m", mensagem)
-        git("pull", "--rebase")
+        # Em conflito com o main (p. ex. num re-run, que parte do commit antigo), ficam os ficheiros gerados agora
+        if subprocess.run(["git", "-C", RAIZ, "pull", "--rebase", "-X", "theirs"]).returncode:
+            git("rebase", "--abort")
+            aviso("PUBLICAR FALHOU: conflito com o main que o git nao resolveu")
+            return
         git("push")
 
 
