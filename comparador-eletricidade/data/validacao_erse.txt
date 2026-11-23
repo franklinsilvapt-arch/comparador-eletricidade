@@ -7,4 +7,4 @@ caso 1.15 kVA, 1000 kWh: 27 resultados do simulador
 ofertas com desconto de novo cliente em que a ERSE conta o desconto: 16
 ofertas com servicos obrigatorios comparadas sem o reembolso (a ERSE nao o conta): 8
 ofertas com reembolso igual ao IEC comparadas com a regra da ERSE (conta-o duas vezes): 4
-88 comparacoes, 0 fora da tolerancia de 0.1€
+85 comparacoes, 0 fora da tolerancia de 0.1€
