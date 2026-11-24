@@ -1,7 +1,7 @@
 {
- "atualizado": "2026-11-17",
+ "atualizado": "2026-11-24",
  "fonte": "ERSE, ofertas comerciais comunicadas pelos comercializadores",
- "ofertas": 265,
+ "ofertas": 266,
  "perfis": [
   {
    "id": "p1",
@@ -15,10 +15,10 @@
     "oferta": "Eletricidade DD+FE - Digital",
     "id": "EDPC_13"
    },
-   "mediana": 486.98,
+   "mediana": 489.71,
    "comercializadores": 18,
-   "ofertas": 254,
-   "abaixo_regulado": 7
+   "ofertas": 255,
+   "abaixo_regulado": 6
   },
   {
    "id": "p2",
@@ -32,10 +32,10 @@
     "oferta": "Eletricidade DD+FE - Digital",
     "id": "EDPC_13"
    },
-   "mediana": 1184.42,
+   "mediana": 1208.46,
    "comercializadores": 18,
-   "ofertas": 254,
-   "abaixo_regulado": 9
+   "ofertas": 255,
+   "abaixo_regulado": 8
   },
   {
    "id": "p3",
@@ -51,7 +51,7 @@
    },
    "mediana": 2639.9,
    "comercializadores": 18,
-   "ofertas": 250,
+   "ofertas": 251,
    "abaixo_regulado": 10
   }
  ],
@@ -356,6 +356,24 @@
    "p2": {
     "melhor": 1017.98,
     "mediana": 1184.42,
+    "regulado": 1189.19
+   },
+   "p3": {
+    "melhor": 2240.24,
+    "mediana": 2639.9,
+    "regulado": 2665.0
+   }
+  },
+  {
+   "data": "2026-11-24",
+   "p1": {
+    "melhor": 402.08,
+    "mediana": 489.71,
+    "regulado": 459.62
+   },
+   "p2": {
+    "melhor": 1017.98,
+    "mediana": 1208.46,
     "regulado": 1189.19
    },
    "p3": {
