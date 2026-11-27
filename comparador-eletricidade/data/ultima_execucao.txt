@@ -1,2 +1,4 @@
-2026-11-26T16:56:03 ficheiro ERSE de 2026-11-25, 301 ofertas, 6 dos sites
-sem avisos
+2026-11-27T16:42:07 ficheiro ERSE de 2026-11-25, 297 ofertas, 2 dos sites
+FONTE DO SITE FALHOU: Luzigás Dinâmico Poupança +: Luzigás Dinâmico Poupança +: esperava 3 tabelas de precos (simples, bi, tri), encontrei 0
+FONTE DO SITE FALHOU: Luzigás Dinâmico Poupança: Luzigás Dinâmico Poupança: esperava 3 tabelas de precos (simples, bi, tri), encontrei 0
+FONTE DO SITE FALHOU: Luzigás Dinâmico Base: Luzigás Dinâmico Base: esperava 3 tabelas de precos (simples, bi, tri), encontrei 0
