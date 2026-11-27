@@ -437,7 +437,10 @@ def luzigas_tabela(tab, n_energia):
 def luzigas_ofertas(html, chave, nome, url, omie_ref):
     tabs = [t for t in tabelas(html) if any(lin and num(lin[0]) in POTS for lin in t)]
     if len(tabs) < 3:
-        raise ValueError(f"Luzigás {nome}: esperava 3 tabelas de precos (simples, bi, tri), encontrei {len(tabs)}")
+        titulo = re.search(r"<title[^>]*>(.*?)</title>", html, re.S | re.I)
+        inicio = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))[:200]
+        raise ValueError(f"Luzigás {nome}: esperava 3 tabelas de precos (simples, bi, tri), encontrei {len(tabs)} "
+                         f"(pagina recebida: {len(html)} caracteres, titulo {titulo.group(1).strip()[:80] if titulo else '-'!r}, texto {inicio!r})")
     tf_s, (e,) = luzigas_tabela(tabs[0], 1)
     tf_b, (fv, vz) = luzigas_tabela(tabs[1], 2)
     tf_t, (pt, ch, vt) = luzigas_tabela(tabs[2], 3)
