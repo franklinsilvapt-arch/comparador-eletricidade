@@ -509,7 +509,21 @@ def preco_345(o):
 
 
 # ---------------------------------------------------------------------------
-def aplicar(ofertas, pedir=get, log=print, omie_ref=None, pedir_json=None):
+def com_tentativas(fn, log, rotulo, n=3, espera=30):
+    """Repete a leitura quando o site devolve uma pagina incompleta ou falha a ligacao (aconteceu a 27/11/2026 com a
+    Luzigas: a pagina chegou ao GitHub sem tabelas, mas estava normal no browser). So a ultima falha conta como erro."""
+    import time
+    for i in range(n):
+        try:
+            return fn()
+        except Exception as e:
+            if i == n - 1:
+                raise
+            log(f"site: {rotulo}: tentativa {i + 1} falhou ({e}), nova tentativa em {espera}s")
+            time.sleep(espera)
+
+
+def aplicar(ofertas, pedir=get, log=print, omie_ref=None, pedir_json=None, espera=30):
     """Junta as ofertas em falta e retira as que nao batem com o site. Devolve (ofertas, erros)."""
     erros, extra = [], []
     nomes_erse = {(o["c"], o["n"].lower()) for o in ofertas}
@@ -555,7 +569,8 @@ def aplicar(ofertas, pedir=get, log=print, omie_ref=None, pedir_json=None):
             if ja_na_erse("LUZIGAS", nome):
                 continue
             try:
-                novas = luzigas_ofertas(pedir(url).decode("utf-8", "replace"), chave, nome, url, omie_ref)
+                novas = com_tentativas(lambda: luzigas_ofertas(pedir(url).decode("utf-8", "replace"), chave, nome, url, omie_ref),
+                                       log, f"Luzigás {nome}", espera=espera)
                 extra += novas
                 log(f"site: Luzigás {nome} ({len(novas)} ofertas)")
             except Exception as e:
