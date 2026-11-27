@@ -1,7 +1,7 @@
 {
  "atualizado": "2026-11-25",
  "fonte": "ERSE, ofertas comerciais comunicadas pelos comercializadores",
- "ofertas": 261,
+ "ofertas": 264,
  "perfis": [
   {
    "id": "p1",
@@ -17,7 +17,7 @@
    },
    "mediana": 489.71,
    "comercializadores": 18,
-   "ofertas": 250,
+   "ofertas": 253,
    "abaixo_regulado": 6
   },
   {
@@ -34,7 +34,7 @@
    },
    "mediana": 1208.46,
    "comercializadores": 18,
-   "ofertas": 250,
+   "ofertas": 253,
    "abaixo_regulado": 8
   },
   {
@@ -51,7 +51,7 @@
    },
    "mediana": 2639.9,
    "comercializadores": 18,
-   "ofertas": 246,
+   "ofertas": 249,
    "abaixo_regulado": 10
   }
  ],
